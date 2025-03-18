@@ -1,16 +1,15 @@
 # iPSF Simulation  
 
 ## Overview  
-**iPSF Simulation** is a tool designed for simulating the **Instrumental Point Spread Function (iPSF)** in optical systems. It enables researchers and engineers to analyze how optical components affect image quality in various configurations.  
+**iPSF Simulation** is a tool designed for simulating the **Interferometric Point Spread Function (iPSF)** that you observe in interferometric scattering (iSCAT) microscopy. It enables researchers and engineers to enter experimental parameters to see how they affect the iPSF.
 
 ## Features  
-- Simulate PSF under different optical conditions  
-- Configurable parameters for lens aberrations, wavelengths, and sensor properties  
-- Visualize PSF results with built-in plotting functions  
-- Efficient computational methods for high-speed simulations  
+- Simulate PSF and iPSF with configurable parameters
+- Efficient computational methods for high-speed simulations
 
-## Installation  
+## Installation
 ```bash
 git clone https://github.com/yourusername/iPSF-Simulation.git
 cd iPSF-Simulation
 pip install -r requirements.txt
+python main.py
