@@ -7,7 +7,6 @@ import os
 from dataclasses import asdict, replace
 
 
-from windows.imageview import ImageView
 from windows.mplcanvas import MplCanvas
 from model import *
 

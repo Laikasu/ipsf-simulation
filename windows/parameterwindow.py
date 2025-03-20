@@ -211,6 +211,8 @@ class ParameterWindow(QDockWidget):
         setuptab_layout.addWidget(self.setup_group)
         setuptab_layout.addWidget(self.particle_group)
         setuptab_layout.addWidget(self.model_group)
+        setuptab_layout.addStretch(1)
+
         self.setup_tab.setLayout(setuptab_layout)
 
         self.aberration_tab = QWidget(self)
@@ -218,6 +220,7 @@ class ParameterWindow(QDockWidget):
         aberrationtab_layout = QVBoxLayout()
         aberrationtab_layout.addWidget(self.layers_group)
         aberrationtab_layout.addWidget(self.variable_group)
+        aberrationtab_layout.addStretch(1)
         self.aberration_tab.setLayout(aberrationtab_layout)
 
         # Sweep animation tab
