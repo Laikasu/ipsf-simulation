@@ -5,8 +5,8 @@ from windows.mainwindow import MainWindow
 
 def main():
     app = QApplication()
-    app.setApplicationName("psf simulator")
-    app.setApplicationDisplayName("PSF Simulator")
+    app.setApplicationName("ipsf-simulator")
+    app.setApplicationDisplayName("iPSF Simulation")
     app.setStyle("fusion")
 
     w = MainWindow()
