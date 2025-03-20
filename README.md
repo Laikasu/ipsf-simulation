@@ -9,7 +9,7 @@
 
 ## Installation
 ```bash
-git clone https://github.com/yourusername/iPSF-Simulation.git
-cd iPSF-Simulation
+git clone https://github.com/Laikasu/ipsf-simulation.git
+cd ./iPSF-Simulation
 pip install -r requirements.txt
 python main.py

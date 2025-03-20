@@ -17,7 +17,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 gold = np.genfromtxt(os.path.join(script_dir, 'Magnozzi-25C.csv'), delimiter=',', skip_header=1).T
 _gold_wavelen = gold[0]
 _n_gold = gold[1] - 1j*gold[2]
-n_gold = interp1d(_gold_wavelen, _n_gold)
+n_gold = interp1d(_gold_wavelen*1000, _n_gold)
 
 
 n_ps = 1.5537
@@ -103,9 +103,9 @@ def t_s(n1, angle1, n2, angle2):
 def B(n, angle_oil, r, p: DesignParams):
     wavelen = p.wavelen*10**-9
     n_oil = p.n_oil
-    n_scat = p.n_scat
-    n_medium = p.n_medium
-    a = p.a*10**-9
+    #n_scat = p.n_scat
+    #n_medium = p.n_medium
+    #a = p.a*10**-9
 
     k = 2*np.pi/wavelen
     #angle_medium = snells_law(n_oil, angle_oil, n_medium)

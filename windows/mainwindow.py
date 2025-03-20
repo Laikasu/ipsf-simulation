@@ -1,10 +1,10 @@
-from PySide6.QtCore import QStandardPaths, QDir, QTimer, QEvent, QFileInfo, Qt, Signal, QThread
+from PySide6.QtCore import QStandardPaths, QDir, QTimer, QEvent, QFileInfo, Qt, Signal, QThread, QSettings
 from PySide6.QtGui import QAction, QKeySequence, QCloseEvent, QIcon, QImage
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QFileDialog, QToolBar
 
 import json
 import os
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 
 from windows.imageview import ImageView
@@ -32,23 +32,26 @@ class MainWindow(QMainWindow):
         #self.display = ImageView(self)
         self.display = MplCanvas(self)
 
-        self.parameters_file = appdata_directory + "/parameters.json"
-
-        self.parameter_window = ParameterWindow(self)
-        self.parameter_window.changed_parameters.connect(self.update_psf)
-
         self.intensity = None
         self.mode = "scat"
 
-        self.update_psf()
-        #self.display.centerOn(self.display.display)
+        self.parameters_file = appdata_directory + "/parameters.json"
+
+
+        self.parameter_window = ParameterWindow("Parameters", self)
+        self.parameter_window.update_psf.connect(self.update_psf)
+        self.update_psf(self.parameter_window.params)
+        self.parameter_window.sweep_params.connect(self.sweep)
+        self.parameter_window.fps_changed.connect(self.display.set_fps)
+        
+        self.addDockWidget(Qt.RightDockWidgetArea, self.parameter_window)
 
         self.createUI()
             
     
     def closeEvent(self, event):
-        with open(self.parameters_file, 'w') as file:
-            json.dump(asdict(self.parameter_window.params), file)
+        # with open(self.parameters_file, 'w') as file:
+        #     json.dump(asdict(self.parameter_window.params), file)
         QApplication.quit()
 
     def createUI(self):
@@ -59,9 +62,9 @@ class MainWindow(QMainWindow):
         #=========#
         application_path = os.path.abspath(os.path.dirname(__file__)) + os.sep
         
-        self.edit_parameters_act = QAction("&Parameters", self)
-        self.edit_parameters_act.setStatusTip("Select a video capture device")
-        self.edit_parameters_act.triggered.connect(self.open_parameter_window)
+        self.show_parameters_act = QAction("&Parameters", self)
+        self.show_parameters_act.setStatusTip("Select a video capture device")
+        self.show_parameters_act.triggered.connect(self.show_parameter_window)
 
         self.set_scat_act = QAction("&Scatter", self)
         self.set_scat_act.setStatusTip("Show scatter psf")
@@ -74,21 +77,32 @@ class MainWindow(QMainWindow):
         self.set_tot_act = QAction("&Total", self)
         self.set_tot_act.setStatusTip("Show total signal")
         self.set_tot_act.triggered.connect(lambda: self.set_mode("tot"))
+
+        self.save_figure_act = QAction("Save", self)
+        self.save_figure_act.setStatusTip("Save figure")
+        self.save_figure_act.triggered.connect(self.display.save)
         
-        exit_act = QAction("E&xit", self)
-        exit_act.setShortcut(QKeySequence.Quit)
-        exit_act.setStatusTip("Exit program")
-        exit_act.triggered.connect(self.close)
+        self.exit_act = QAction("E&xit", self)
+        self.exit_act.setShortcut(QKeySequence.Quit)
+        self.exit_act.setStatusTip("Exit program")
+        self.exit_act.triggered.connect(self.close)
 
         #=========#
         # Menubar #
         #=========#
 
-        edit_menu = self.menuBar().addMenu("&Edit")
-        edit_menu.addAction(self.edit_parameters_act)
+        # edit_menu = self.menuBar().addMenu("&Edit")
+        # edit_menu.addAction(self.edit_parameters_act)
 
-        # file_menu = self.menuBar().addMenu("&File")
-        # file_menu.addAction(exit_act)
+        file_menu = self.menuBar().addMenu("&File")
+        file_menu.addAction(self.save_figure_act)
+        file_menu.addSeparator()
+        file_menu.addAction(self.exit_act)
+
+        view_menu = self.menuBar().addMenu("&View")
+        view_menu.addAction(self.show_parameters_act)
+
+        
 
         # device_menu = self.menuBar().addMenu("&Device")
         # device_menu.addAction(self.device_select_act)
@@ -105,6 +119,8 @@ class MainWindow(QMainWindow):
         psf_menu.addAction(self.set_scat_act)
         psf_menu.addAction(self.set_if_act)
         psf_menu.addAction(self.set_tot_act)
+
+        
         
 
 
@@ -151,21 +167,33 @@ class MainWindow(QMainWindow):
 
     def set_mode(self, mode):
         self.mode = mode
-
-        pxsize_obj = self.parameter_window.params.pxsize/self.parameter_window.params.magnification
         if self.intensity is not None:
-            self.display.update_image(self.intensity[self.mode], pxsize_obj)
+            if isinstance(self.intensity, list):
+                self.display.update_animation([intensity[self.mode] for intensity in self.intensity])
+            else:
+                self.display.update_image(self.intensity[self.mode])
     
-    def open_parameter_window(self):
+    def show_parameter_window(self):
         self.parameter_window.show()
-        self.parameter_window.raise_()
     
-    def update_psf(self):
-        params = self.parameter_window.params
-        camera = Camera(self.parameter_window.params)
-
-        pxsize_obj = self.parameter_window.params.pxsize/self.parameter_window.params.magnification
-
+    def update_psf(self, params: DesignParams):
+        camera = Camera(params)
+        pxsize_obj = params.pxsize/params.magnification
         scatter_field = calculate_scatter_field(params)
         self.intensity = calculate_intensities(scatter_field, params, camera, r_resolution=self.parameter_window.rresolution)
         self.display.update_image(self.intensity[self.mode], pxsize_obj)
+    
+    def sweep(self, params: DesignParams, param_name: str, param: np.ndarray):
+        self.intensity = []
+
+        params = replace(params)
+        pxsizes = []
+        for p in param:
+            setattr(params, param_name, p)
+            camera = Camera(params)
+            scatter_field = calculate_scatter_field(params)
+            intensity = calculate_intensities(scatter_field, params, camera, r_resolution=self.parameter_window.rresolution)
+            self.intensity.append(intensity)
+            pxsizes.append(params.pxsize/params.magnification)
+        
+        self.display.update_animation([intensity[self.mode] for intensity in self.intensity], pxsizes)
