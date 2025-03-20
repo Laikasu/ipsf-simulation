@@ -2,7 +2,6 @@ import numpy as np
 from scipy.special import jv
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
-from dataclasses import dataclass
 import os
 import miepython as mie
 
@@ -27,29 +26,80 @@ n_glass = 1.499
 n_oil = 1.5018
 n_glyc = 1.461
 
-@dataclass
 class DesignParams():
-    n_oil: float = n_oil
-    n_oil0: float = 1.5
-    n_glass: float = n_glass
-    n_glass0: float = 1.5
-    n_medium: float = n_water
-    t_oil0: float = 100 # micron
-    t_oil: float = 100 # micron
-    t_glass: float = 170 # micron
-    t_glass0: float = 170 # micron
-    n_scat: complex = n_ps
-    a: float = 50 # nm
-    z_p: float = 0 # micron
-    z_focus: float = 0
-    wavelen: float = 525 # nm
-    NA: float = 1.4
-    azimuth: float = 0 # degrees
-    inclination: float = 0 # degrees
-    unpolarized: bool = False
-    roi_size: float = 2 # micron
-    pxsize: float = 3.45 # micron
-    magnification: float = 80
+    scat_materials = ("polystyrene", "gold")
+    def __init__(self,
+                n_oil: float = n_oil,
+                n_oil0: float = 1.5,
+                n_glass: float = n_glass,
+                n_glass0: float = 1.5,
+                n_medium: float = n_water,
+                t_oil0: float = 100, # micron
+                t_oil: float = 100, # micron
+                t_glass: float = 170, # micron
+                t_glass0: float = 170, # micron
+                a: float = 50, # nm
+                z_p: float = 0, # micron
+                z_focus: float = 0,
+                wavelen: float = 525, # nm
+                NA: float = 1.4,
+                azimuth: float = 0, # degrees
+                inclination: float = 0, # degrees
+                unpolarized: bool = False,
+                roi_size: float = 2, # micron
+                pxsize: float = 3.45, # micron
+                magnification: float = 80,
+                scat_mat: str = "polystyrene"):
+        self.n_oil: float = n_oil
+        self.n_oil0: float = n_oil0
+        self.n_glass: float = n_glass
+        self.n_glass0: float = n_glass0
+        self.n_medium: float = n_medium
+        self.t_oil0: float = t_oil0 # micron
+        self.t_oil: float = t_oil # micron
+        self.t_glass: float = t_glass # micron
+        self.t_glass0: float = t_glass0 # micron
+        self._wavelen: float = wavelen # nm
+        self.scat_mat = scat_mat
+        self.a: float = a # nm
+        self.z_p: float = z_p # micron
+        self.z_focus: float = z_focus
+        self.NA: float = NA
+        self.azimuth: float = azimuth # degrees
+        self.inclination: float = inclination # degrees
+        self.unpolarized: bool = unpolarized
+        self.roi_size: float = roi_size # micron
+        self.pxsize: float = pxsize # micron
+        self.magnification: float = magnification
+    
+    @property
+    def scat_mat(self):
+        return self._scat_mat
+        
+    @scat_mat.setter
+    def scat_mat(self, value: str):
+        if value == "gold":
+            self.n_scat = n_gold(self._wavelen)
+            self._scat_mat = value
+        elif value == "polystyrene":
+            self.n_scat = n_ps
+            self._scat_mat = value
+        else:
+            raise ValueError(f"Material {value} not found")
+        
+    @property
+    def wavelen(self):
+        return self._wavelen
+    
+    @wavelen.setter
+    def wavelen(self, value):
+        self._wavelen = value
+        if self.scat_mat == "gold":
+            self.n_scat = n_gold(value)
+
+
+    def to_dict(self):
+        return self.__dict__
     
 
 class Camera():

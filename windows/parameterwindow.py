@@ -2,7 +2,6 @@ from PySide6.QtWidgets import QWidget, QLabel, QFormLayout, QDoubleSpinBox, QChe
 from PySide6.QtCore import Signal, Qt, QFileInfo, QTimer
 
 
-from dataclasses import asdict
 from model import DesignParams
 import json
 from functools import partial
@@ -57,7 +56,7 @@ class ParameterWindow(QDockWidget):
 
         self.wavelen = QSpinBox(minimum=300, maximum=900, singleStep=50, suffix=" nm")
         self.wavelen.setValue(self.params.wavelen)
-        self.wavelen.valueChanged.connect(self.set_wavelen)
+        self.wavelen.valueChanged.connect(partial(self.set_parameter, self.params, "wavelen"))
 
         self.azimuth = QSpinBox(minimum=0, maximum=360, singleStep=10, suffix="°")
         self.azimuth.setValue(self.params.azimuth)
@@ -118,9 +117,8 @@ class ParameterWindow(QDockWidget):
         self.z_focus.valueChanged.connect(partial(self.set_parameter, self.params, "z_focus"))
         
         self.n_scat = QComboBox()
-        self.n_scat.addItems(("gold", "polystyrene"))
-        self.n_scat.currentTextChanged.connect(self.set_n)
-        
+        self.n_scat.addItems(DesignParams.scat_materials)
+        self.n_scat.currentTextChanged.connect(partial(self.set_parameter, self.params, "scat_mat"))
 
         self.n_medium = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
         self.n_medium.setValue(self.params.n_medium)
@@ -128,7 +126,7 @@ class ParameterWindow(QDockWidget):
 
         
         self.misc = QComboBox()
-        sweepable_params = [k for k, v in asdict(self.params).items() if type(v) in (int, float)]
+        sweepable_params = [k for k, v in self.params.to_dict().items() if type(v) in (int, float)]
         self.misc.addItems(sweepable_params)
 
         self.start = QDoubleSpinBox(minimum=0, maximum=1000)
@@ -228,23 +226,6 @@ class ParameterWindow(QDockWidget):
         self.tabwidget.addTab(self.anim_tab, "Animation")
 
         self.anim_tab.setLayout(animtab_layout)
-    
-    def set_n(self, text):
-        self.scatterer = text
-        self.update_n()
-        self.update_psf.emit(self.params)
-    
-    def set_wavelen(self, value):
-        self.params.wavelen = value
-        self.update_n()
-        self.update_psf.emit(self.params)
-
-    def update_n(self):
-        if self.scatterer == "gold":
-            self.params.n_scat = n_gold(self.params.wavelen)
-        elif self.scatterer == "polystyrene":
-            self.params.n_scat = n_ps
-        print(self.params.n_scat)
     
     def set_parameter(self, obj, name, value):
         setattr(obj, name, value)
