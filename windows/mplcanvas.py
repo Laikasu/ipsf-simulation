@@ -1,17 +1,15 @@
-from PySide6.QtCore import QRect, QMargins, Qt, Signal
-from PySide6.QtGui import QPixmap, QImage, QShortcut, QKeySequence, QPainter
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QMessageBox, QWidget
-
 import numpy as np
-import time
-
-AnchorCenter = QGraphicsView.ViewportAnchor.AnchorViewCenter
-AnchorMouse = QGraphicsView.ViewportAnchor.AnchorUnderMouse
 import matplotlib
 matplotlib.use("Agg")
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+
+from PySide6.QtWidgets import QFileDialog
+from PySide6.QtCore import QStandardPaths
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 from matplotlib.image import AxesImage
+from matplotlib.animation import FuncAnimation
+
+from typing import List
 
 #from matplotlib_scalebar.scalebar import ScaleBar
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
@@ -22,23 +20,87 @@ class MplCanvas(FigureCanvasQTAgg):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
         self.axes.set_axis_off()
-        
-        fig.tight_layout(pad=0)
+        fig.tight_layout(pad=0.5)
         super().__init__(fig)
+        
         self.image: AxesImage = None
+        self.anim: FuncAnimation = None
+        self.fps = 10
 
-    def update_image(self, frame: np.ndarray, pxsize=3.45):
+    def update_image(self, frame: np.ndarray, pxsize: float = None):
         width, height = frame.shape
+        if self.anim is not None:
+            self.anim.pause()
+            self.anim = None
         if self.image is None:
-            self.image = self.axes.imshow(frame, cmap='viridis', extent=(0, pxsize*width, 0, pxsize*height))
+            self.image = self.axes.imshow(frame, cmap='viridis')
+            assert pxsize
+            self.pxsize = pxsize
+            self.image.set_extent((0, pxsize*width, 0, pxsize*height))
             self.colorbar = self.figure.colorbar(self.image)
             scalebar = AnchoredSizeBar(self.axes.transData, 0.2, '200 nm', 'lower center', pad=0.1, frameon=False, color='white', sep=5)
             self.axes.add_artist(scalebar)
         else:
             self.image.set_data(frame)
-            
+
+            # Update pxsize
+            if pxsize:
+                self.pxsize = pxsize
+
+            self.image.set_extent((0, self.pxsize*width, 0, self.pxsize*height))
             # Double bc it doesnt set them simultaneously
             self.image.set_clim(np.min(frame), np.max(frame))
             self.image.set_clim(np.min(frame), np.max(frame))
-            self.image.set_extent((0, pxsize*width, 0, pxsize*height))
             self.draw_idle()
+
+    
+
+    def animate(self, frame: int):
+        intensity = self.intensities[frame]
+        minimum = np.min(intensity)
+        maximum = np.max(intensity)
+        self.image.set_data(self.intensities[frame])
+        self.image.set_clim(minimum, maximum)
+        self.image.set_clim(minimum, maximum)
+        if self.pxsizes:
+            self.pxsize = self.pxsizes[frame]
+        width, height = self.intensities[frame].shape
+        self.image.set_extent((0, self.pxsize*width, 0, self.pxsize*height))
+        return self.image,
+
+    def save(self):
+        loc = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
+        if self.anim:
+            filepath, selected_filter = QFileDialog.getSaveFileName(self, "Save Animation", loc,"GIF Files (*.gif)")
+            if filepath:
+                # Determine selected format from the filter
+                if "mp4" in selected_filter:
+                    format_extension = ".mp4"
+                elif "gif" in selected_filter:
+                    format_extension = ".gif"
+                else:
+                    print("Unknown format selected")
+                    return
+                if not filepath.lower().endswith(format_extension):
+                    filepath += format_extension
+
+                self.anim.save(filepath, fps=self.fps)
+        elif self.image:
+            filepath, _ = QFileDialog.getSaveFileName(self, "Save Figure", loc,"Image Files(*.png *.jpg *.bmp)")
+            if filepath:
+                self.figure.savefig(filepath)
+
+    def update_animation(self, intensities: List[np.ndarray], pxsizes: List[float] = None):
+        if self.anim is not None:
+            self.anim.pause()
+        self.intensities = intensities
+        if pxsizes:
+            self.pxsizes = pxsizes
+        
+        self.anim = FuncAnimation(self.figure, self.animate, frames=len(intensities), interval=int(1000/self.fps), blit=False)
+        self.draw_idle()
+
+    def set_fps(self, fps):
+        self.fps = fps
+        if self.anim is not None:
+            self.update_animation(self.intensities)
