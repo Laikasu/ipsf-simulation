@@ -57,14 +57,12 @@ class MplCanvas(FigureCanvasQTAgg):
 
     def animate(self, frame: int):
         intensity = self.intensities[frame]
-        minimum = np.min(intensity)
-        maximum = np.max(intensity)
-        self.image.set_data(self.intensities[frame])
-        self.image.set_clim(minimum, maximum)
-        self.image.set_clim(minimum, maximum)
-        if self.pxsizes:
+        self.image.set_data(intensity)
+        if self.pxsizes is not None:
             self.pxsize = self.pxsizes[frame]
-        width, height = self.intensities[frame].shape
+        if self.param is not None:
+            self.axes.set_title(self.param_name + f' = {self.param[frame]:.0f}')
+        width, height = intensity.shape
         self.image.set_extent((0, self.pxsize*width, 0, self.pxsize*height))
         return self.image,
 
@@ -90,13 +88,21 @@ class MplCanvas(FigureCanvasQTAgg):
             if filepath:
                 self.figure.savefig(filepath)
 
-    def update_animation(self, intensities: List[np.ndarray], pxsizes: List[float] = None):
+    def update_animation(self, intensities: List[np.ndarray], pxsizes: List[float] = None, param_name: str = None, param: np.ndarray = None):
         if self.anim is not None:
             self.anim.pause()
         self.intensities = intensities
-        if pxsizes:
+        if pxsizes is not None:
             self.pxsizes = pxsizes
-        
+        if param_name is not None:
+            self.param_name = param_name
+        if param is not None:
+            self.param = param
+
+        minimum = np.min(intensities)
+        maximum = np.max(intensities)
+        self.image.set_clim(minimum, maximum)
+        self.image.set_clim(minimum, maximum)
         self.anim = FuncAnimation(self.figure, self.animate, frames=len(intensities), interval=int(1000/self.fps), blit=False)
         self.draw_idle()
 

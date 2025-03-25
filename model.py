@@ -38,7 +38,7 @@ class DesignParams():
                 t_oil: float = 100, # micron
                 t_glass: float = 170, # micron
                 t_glass0: float = 170, # micron
-                a: float = 50, # nm
+                diameter: float = 30, # nm
                 z_p: float = 0, # micron
                 z_focus: float = 0,
                 wavelen: float = 525, # nm
@@ -61,7 +61,7 @@ class DesignParams():
         self.t_glass0: float = t_glass0 # micron
         self._wavelen: float = wavelen # nm
         self.scat_mat = scat_mat
-        self.a: float = a # nm
+        self.diameter: float = diameter # nm
         self.z_p: float = z_p # micron
         self.z_focus: float = z_focus
         self.NA: float = NA
@@ -96,6 +96,10 @@ class DesignParams():
         self._wavelen = value
         if self.scat_mat == "gold":
             self.n_scat = n_gold(value)
+    
+    @property
+    def a(self):
+        return self.diameter/2
 
 
     def to_dict(self):

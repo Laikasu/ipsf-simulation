@@ -124,15 +124,21 @@ class ParameterWindow(QDockWidget):
         self.n_medium.setValue(self.params.n_medium)
         self.n_medium.valueChanged.connect(partial(self.set_parameter, self.params, "n_medium"))
 
+        self.diameter = QSpinBox(minimum=1, maximum=100, singleStep=1, suffix=" nm")
+        self.diameter.setValue(self.params.diameter)
+        self.diameter.valueChanged.connect(partial(self.set_parameter, self.params, "diameter"))
+
+
+        # Animation
         
         self.misc = QComboBox()
-        sweepable_params = [k for k, v in self.params.to_dict().items() if type(v) in (int, float)]
+        sweepable_params = [k.lstrip("_") for k, v in self.params.to_dict().items() if type(v) in (int, float)]
         self.misc.addItems(sweepable_params)
 
         self.start = QDoubleSpinBox(minimum=0, maximum=1000)
         self.stop = QDoubleSpinBox(minimum=0, maximum=1000)
-        self.start.valueChanged.connect(lambda value: self.stop.setValue(max(value, self.stop.value())))
-        self.stop.valueChanged.connect(lambda value: self.start.setValue(min(value, self.start.value())))
+        #self.start.valueChanged.connect(lambda value: self.stop.setValue(max(value, self.stop.value())))
+        #self.stop.valueChanged.connect(lambda value: self.start.setValue(min(value, self.start.value())))
         self.num = QSpinBox(minimum=1, value=10)
         self.fps = QSpinBox(minimum=1, value=10)
         self.fps.valueChanged.connect(self.fps_changed.emit)
@@ -150,12 +156,12 @@ class ParameterWindow(QDockWidget):
         setup_layout.addRow("Wavelength", self.wavelen)
         self.setup_group.setLayout(setup_layout)
 
-        self.particle_group = QGroupBox("Particle")
-        particle_layout = QFormLayout()
-        particle_layout.addRow("Azimuth", self.azimuth)
-        particle_layout.addRow("Inclination", self.inclination)
-        particle_layout.addRow("Unpolarized", self.unpolarized)
-        self.particle_group.setLayout(particle_layout)
+        self.orientation_group = QGroupBox("Orientation")
+        orientation_layout = QFormLayout()
+        orientation_layout.addRow("Azimuth", self.azimuth)
+        orientation_layout.addRow("Inclination", self.inclination)
+        orientation_layout.addRow("Unpolarized", self.unpolarized)
+        self.orientation_group.setLayout(orientation_layout)
 
         self.model_group = QGroupBox("Model")
         model_layout = QFormLayout()
@@ -191,6 +197,7 @@ class ParameterWindow(QDockWidget):
         variable_layout.addRow("Focal Position", self.z_focus)
         variable_layout.addRow("n_medium", self.n_medium)
         variable_layout.addRow("n_scatterer", self.n_scat)
+        variable_layout.addRow("diameter", self.diameter)
         self.variable_group.setLayout(variable_layout)
 
         animtab_layout = QFormLayout()
@@ -207,7 +214,7 @@ class ParameterWindow(QDockWidget):
         self.tabwidget.addTab(self.setup_tab, "Setup")
         setuptab_layout = QVBoxLayout()
         setuptab_layout.addWidget(self.setup_group)
-        setuptab_layout.addWidget(self.particle_group)
+        setuptab_layout.addWidget(self.orientation_group)
         setuptab_layout.addWidget(self.model_group)
         setuptab_layout.addStretch(1)
 
