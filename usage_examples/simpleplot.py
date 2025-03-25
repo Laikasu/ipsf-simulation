@@ -1,5 +1,8 @@
-from model import *
 import numpy as np
+import sys, os
+
+sys.path.append(os.path.dirname(__file__) + "/..")
+from model import *
 
 # Plotting
 #from matplotlib_scalebar.scalebar import ScaleBar
@@ -17,7 +20,7 @@ params = DesignParams(
     z_p = 0,
     z_focus = 0,
     wavelen = wavelength,
-    n_scat = n_ps,
+    scat_mat="gold",
     n_medium = n_water,
     a = radius,
     roi_size=1,

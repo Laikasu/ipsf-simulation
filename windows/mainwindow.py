@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QF
 
 import json
 import os
-from dataclasses import asdict, replace
+import copy
 
 
 from windows.mplcanvas import MplCanvas
@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
     def sweep(self, params: DesignParams, param_name: str, param: np.ndarray):
         self.intensity = []
 
-        params = replace(params)
+        params = copy.copy(params)
         pxsizes = []
         for p in param:
             setattr(params, param_name, p)
@@ -195,4 +195,4 @@ class MainWindow(QMainWindow):
             self.intensity.append(intensity)
             pxsizes.append(params.pxsize/params.magnification)
         
-        self.display.update_animation([intensity[self.mode] for intensity in self.intensity], pxsizes)
+        self.display.update_animation([intensity[self.mode] for intensity in self.intensity], pxsizes, param_name, param)
