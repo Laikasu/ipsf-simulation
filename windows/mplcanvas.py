@@ -26,17 +26,22 @@ class MplCanvas(FigureCanvasQTAgg):
         self.image: AxesImage = None
         self.anim: FuncAnimation = None
         self.fps = 10
+        self.cmap = 'viridis'
+        self.mode = 'scat'
 
-    def update_image(self, frame: np.ndarray, pxsize: float = None):
+    def update_image(self, intensities: np.ndarray = None, pxsize: float = None):
+        if intensities is not None:
+            self.intensities = intensities
+        frame = self.intensities[self.mode]
         width, height = frame.shape
         if self.anim is not None:
             self.anim.pause()
             self.anim = None
         if self.image is None:
-            self.image = self.axes.imshow(frame, cmap='viridis')
-            assert pxsize
-            self.pxsize = pxsize
-            self.image.set_extent((0, pxsize*width, 0, pxsize*height))
+            self.image = self.axes.imshow(frame, cmap=self.cmap)
+            if pxsize is not None:
+                self.pxsize = pxsize
+                self.image.set_extent((0, pxsize*width, 0, pxsize*height))
             self.colorbar = self.figure.colorbar(self.image)
             scalebar = AnchoredSizeBar(self.axes.transData, 0.2, '200 nm', 'lower center', pad=0.1, frameon=False, color='white', sep=5)
             self.axes.add_artist(scalebar)
@@ -56,7 +61,7 @@ class MplCanvas(FigureCanvasQTAgg):
     
 
     def animate(self, frame: int):
-        intensity = self.intensities[frame]
+        intensity = self.intensities[frame][self.mode]
         self.image.set_data(intensity)
         if self.pxsizes is not None:
             self.pxsize = self.pxsizes[frame]
@@ -88,10 +93,11 @@ class MplCanvas(FigureCanvasQTAgg):
             if filepath:
                 self.figure.savefig(filepath)
 
-    def update_animation(self, intensities: List[np.ndarray], pxsizes: List[float] = None, param_name: str = None, param: np.ndarray = None):
+    def update_animation(self, intensities: List[np.ndarray] = None, pxsizes: List[float] = None, param_name: str = None, param: np.ndarray = None):
         if self.anim is not None:
             self.anim.pause()
-        self.intensities = intensities
+        if intensities is not None:
+            self.intensities = intensities
         if pxsizes is not None:
             self.pxsizes = pxsizes
         if param_name is not None:
@@ -99,6 +105,7 @@ class MplCanvas(FigureCanvasQTAgg):
         if param is not None:
             self.param = param
 
+        intensities = [intensity[self.mode] for intensity in self.intensities]
         minimum = np.min(intensities)
         maximum = np.max(intensities)
         self.image.set_clim(minimum, maximum)
@@ -109,4 +116,20 @@ class MplCanvas(FigureCanvasQTAgg):
     def set_fps(self, fps):
         self.fps = fps
         if self.anim is not None:
-            self.update_animation(self.intensities)
+            self.update_animation()
+    
+    def set_cmap(self, cmap):
+        self.cmap = cmap
+        if self.image is not None:
+            self.image.set_cmap(cmap)
+            if self.anim is None:
+                self.update_image()
+    
+    def set_mode(self, mode):
+        self.mode = mode
+        if self.anim is not None:
+            self.update_animation()
+        elif self.image is not None:
+            self.update_image()
+
+
