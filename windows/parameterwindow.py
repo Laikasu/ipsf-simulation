@@ -134,9 +134,12 @@ class ParameterWindow(QDockWidget):
         self.misc = QComboBox()
         sweepable_params = [k.lstrip("_") for k, v in self.params.to_dict().items() if type(v) in (int, float)]
         self.misc.addItems(sweepable_params)
+        self.misc.setCurrentText("wavelen")
 
         self.start = QDoubleSpinBox(minimum=0, maximum=1000)
+        self.start.setValue(500)
         self.stop = QDoubleSpinBox(minimum=0, maximum=1000)
+        self.stop.setValue(600)
         #self.start.valueChanged.connect(lambda value: self.stop.setValue(max(value, self.stop.value())))
         #self.stop.valueChanged.connect(lambda value: self.start.setValue(min(value, self.start.value())))
         self.num = QSpinBox(minimum=1, value=10)

@@ -1,6 +1,6 @@
 from PySide6.QtCore import QStandardPaths, QDir, QTimer, QEvent, QFileInfo, Qt, Signal, QThread, QSettings
 from PySide6.QtGui import QAction, QKeySequence, QCloseEvent, QIcon, QImage
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QFileDialog, QToolBar
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QFileDialog, QToolBar, QDockWidget, QWidget, QVBoxLayout
 
 import json
 import os
@@ -8,6 +8,8 @@ import copy
 
 
 from windows.mplcanvas import MplCanvas
+from windows.mplplot import MplPlot
+from windows.mplplot import PlotWindow
 from model import *
 
 from windows.parameterwindow import ParameterWindow
@@ -42,8 +44,17 @@ class MainWindow(QMainWindow):
         self.update_psf(self.parameter_window.params)
         self.parameter_window.sweep_params.connect(self.sweep)
         self.parameter_window.fps_changed.connect(self.display.set_fps)
+
+        
+        
+        self.plot_window = PlotWindow()
+        self.plot = self.plot_window.plot
+        
+
+        self.plot_window.hide()
         
         self.addDockWidget(Qt.RightDockWidgetArea, self.parameter_window)
+        
 
         self.createUI()
             
@@ -62,24 +73,37 @@ class MainWindow(QMainWindow):
         application_path = os.path.abspath(os.path.dirname(__file__)) + os.sep
         
         self.show_parameters_act = QAction("&Parameters", self)
-        self.show_parameters_act.setStatusTip("Select a video capture device")
-        self.show_parameters_act.triggered.connect(self.show_parameter_window)
+        self.show_parameters_act.setStatusTip("Show parameter panel")
+        self.show_parameters_act.triggered.connect(lambda: self.parameter_window.setVisible(not self.parameter_window.isVisible()))
+        self.show_parameters_act.setShortcut(Qt.CTRL | Qt.SHIFT | Qt.Key_P)
+
+        self.show_plot_act = QAction("&Show Plot", self)
+        self.show_plot_act.setStatusTip("Show plot panel")
+        self.show_plot_act.triggered.connect(lambda: self.plot_window.setVisible(not self.plot_window.isVisible()))
+        self.show_plot_act.setShortcut(Qt.CTRL | Qt.SHIFT | Qt.Key_S)
 
         self.set_scat_act = QAction("&Scatter", self)
         self.set_scat_act.setStatusTip("Show scatter psf")
-        self.set_scat_act.triggered.connect(lambda: self.set_mode("scat"))
+        self.set_scat_act.triggered.connect(lambda: self.display.set_mode("scat"))
 
         self.set_if_act = QAction("&Interference", self)
         self.set_if_act.setStatusTip("Show interference psf")
-        self.set_if_act.triggered.connect(lambda: self.set_mode("if"))
+        self.set_if_act.triggered.connect(lambda: self.display.set_mode("if"))
         
         self.set_tot_act = QAction("&Total", self)
         self.set_tot_act.setStatusTip("Show total signal")
-        self.set_tot_act.triggered.connect(lambda: self.set_mode("tot"))
+        self.set_tot_act.triggered.connect(lambda: self.display.set_mode("tot"))
+
+        self.set_viridis_act = QAction("viridis cmap", self)
+        self.set_viridis_act.triggered.connect(lambda: self.display.set_cmap("viridis"))
+        
+        self.set_gray_act = QAction("grayscale cmap", self)
+        self.set_gray_act.triggered.connect(lambda: self.display.set_cmap("gray"))
 
         self.save_figure_act = QAction("Save", self)
         self.save_figure_act.setStatusTip("Save figure")
         self.save_figure_act.triggered.connect(self.display.save)
+        self.save_figure_act.setShortcut(QKeySequence.Save)
         
         self.exit_act = QAction("E&xit", self)
         self.exit_act.setShortcut(QKeySequence.Quit)
@@ -100,24 +124,13 @@ class MainWindow(QMainWindow):
 
         view_menu = self.menuBar().addMenu("&View")
         view_menu.addAction(self.show_parameters_act)
-
-        
-
-        # device_menu = self.menuBar().addMenu("&Device")
-        # device_menu.addAction(self.device_select_act)
-        # device_menu.addAction(self.device_properties_act)
-        # device_menu.addAction(self.device_driver_properties_act)
-        # device_menu.addAction(self.set_roi_act)
-        # device_menu.addAction(self.move_act)
-        # device_menu.addAction(self.trigger_mode_act)
-        # device_menu.addAction(self.start_live_act)
-        # device_menu.addSeparator()
-        # device_menu.addAction(self.close_device_act)
-
-        psf_menu = self.menuBar().addMenu("&PSF")
-        psf_menu.addAction(self.set_scat_act)
-        psf_menu.addAction(self.set_if_act)
-        psf_menu.addAction(self.set_tot_act)
+        view_menu.addAction(self.show_plot_act)
+        view_menu.addSeparator()
+        view_menu.addAction(self.set_scat_act)
+        view_menu.addAction(self.set_if_act)
+        view_menu.addAction(self.set_tot_act)
+        view_menu.addAction(self.set_gray_act)
+        view_menu.addAction(self.set_viridis_act)
 
         
         
@@ -163,24 +176,13 @@ class MainWindow(QMainWindow):
         # self.update_statistics_timer = QTimer()
         # self.update_statistics_timer.timeout.connect(self.onUpdateStatisticsTimer)
         # self.update_statistics_timer.start()
-
-    def set_mode(self, mode):
-        self.mode = mode
-        if self.intensity is not None:
-            if isinstance(self.intensity, list):
-                self.display.update_animation([intensity[self.mode] for intensity in self.intensity])
-            else:
-                self.display.update_image(self.intensity[self.mode])
-    
-    def show_parameter_window(self):
-        self.parameter_window.show()
     
     def update_psf(self, params: DesignParams):
         camera = Camera(params)
         pxsize_obj = params.pxsize/params.magnification
         scatter_field = calculate_scatter_field(params)
         self.intensity = calculate_intensities(scatter_field, params, camera, r_resolution=self.parameter_window.rresolution)
-        self.display.update_image(self.intensity[self.mode], pxsize_obj)
+        self.display.update_image(self.intensity, pxsize_obj)
     
     def sweep(self, params: DesignParams, param_name: str, param: np.ndarray):
         self.intensity = []
@@ -195,4 +197,5 @@ class MainWindow(QMainWindow):
             self.intensity.append(intensity)
             pxsizes.append(params.pxsize/params.magnification)
         
-        self.display.update_animation([intensity[self.mode] for intensity in self.intensity], pxsizes, param_name, param)
+        self.display.update_animation(self.intensity, pxsizes, param_name, param)
+        self.plot.plot(self.intensity, param)

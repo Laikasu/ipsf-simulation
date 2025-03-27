@@ -3,7 +3,6 @@ from scipy.special import jv
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import os
-import miepython as mie
 
 # TO DO: other data
 # TO DO: name all formulae
@@ -314,45 +313,46 @@ def calculate_scatter_field(p):
     scatter_field *= np.sqrt(scatter_cross_section)*collection_efficiency
     return scatter_field
 
-def calculate_scatter_field_mie(p):
-    n_glass = p.n_glass
-    n_medium = p.n_medium
-    n_oil = p.n_oil
-    n_scat = p.n_scat
-    a = p.a*10**-9
-    NA = p.NA
-    polarization = np.array([np.cos(np.radians(p.inclination))*np.cos(np.radians(p.azimuth)), 
-                             np.cos(np.radians(p.inclination))*np.sin(np.radians(p.azimuth)), 
-                             np.sin(np.radians(p.inclination))])
-    wavelen = p.wavelen*10**-9
+# def calculate_scatter_field_mie(p):
+#     import miepython as mie
+#     n_glass = p.n_glass
+#     n_medium = p.n_medium
+#     n_oil = p.n_oil
+#     n_scat = p.n_scat
+#     a = p.a*10**-9
+#     NA = p.NA
+#     polarization = np.array([np.cos(np.radians(p.inclination))*np.cos(np.radians(p.azimuth)), 
+#                              np.cos(np.radians(p.inclination))*np.sin(np.radians(p.azimuth)), 
+#                              np.sin(np.radians(p.inclination))])
+#     wavelen = p.wavelen*10**-9
 
-    scatter_field = 1 + 0j
-    # Reference field polarization, phase and magnitude
-    E_reference = polarization[:,np.newaxis,np.newaxis] # x_polarization with size 1
+#     scatter_field = 1 + 0j
+#     # Reference field polarization, phase and magnitude
+#     E_reference = polarization[:,np.newaxis,np.newaxis] # x_polarization with size 1
 
-    # Backpropagate reference to excitation
-    r_gm = (n_glass - n_medium)/(n_glass + n_medium)
-    t_gm = 2*n_glass/(n_glass + n_medium)
-    t_go = 2*n_glass/(n_glass + n_oil)
-    E_excitation = E_reference/t_go/r_gm*t_gm
-    scatter_field = E_excitation*scatter_field
+#     # Backpropagate reference to excitation
+#     r_gm = (n_glass - n_medium)/(n_glass + n_medium)
+#     t_gm = 2*n_glass/(n_glass + n_medium)
+#     t_go = 2*n_glass/(n_glass + n_oil)
+#     E_excitation = E_reference/t_go/r_gm*t_gm
+#     scatter_field = E_excitation*scatter_field
 
-    # Magnitude and phase of scatter field
-    capture_angle_medium = np.arcsin(min(NA/n_medium, 1))
-    collection_efficiency = capture_angle_medium/np.pi
-    x_mie = 2*np.pi*a*n_medium / wavelen
-    k = 2*np.pi*n_medium/wavelen
-    e_scat = n_scat**2
-    e_medium = n_medium**2
-    polarizability = 4*np.pi*a**3*(e_scat-e_medium)/(e_scat + 2*e_medium)
+#     # Magnitude and phase of scatter field
+#     capture_angle_medium = np.arcsin(min(NA/n_medium, 1))
+#     collection_efficiency = capture_angle_medium/np.pi
+#     x_mie = 2*np.pi*a*n_medium / wavelen
+#     k = 2*np.pi*n_medium/wavelen
+#     e_scat = n_scat**2
+#     e_medium = n_medium**2
+#     polarizability = 4*np.pi*a**3*(e_scat-e_medium)/(e_scat + 2*e_medium)
 
-    qext, qsca, qback, g = mie.mie(n_scat/n_medium, x_mie)
-    scatter_cross_section = qsca * np.pi * a**2
+#     qext, qsca, qback, g = mie.mie(n_scat/n_medium, x_mie)
+#     scatter_cross_section = qsca * np.pi * a**2
 
-    scatter_phase = np.angle(polarizability)
+#     scatter_phase = np.angle(polarizability)
     
-    scatter_field *= np.sqrt(scatter_cross_section)*collection_efficiency*np.exp(1j*scatter_phase)
-    return scatter_field
+#     scatter_field *= np.sqrt(scatter_cross_section)*collection_efficiency*np.exp(1j*scatter_phase)
+#     return scatter_field
 
 # def calculate_scatter_field_mie_dipole(p):
 #     n_glass = p.n_glass
