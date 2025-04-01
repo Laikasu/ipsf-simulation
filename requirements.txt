@@ -2,3 +2,4 @@ scipy
 numpy
 pyside6
 matplotlib
+tifffile

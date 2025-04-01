@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         QApplication.quit()
 
     def createUI(self):
-        self.resize(1024, 768)
+        self.resize(1024, 600)
 
         #=========#
         # Actions #

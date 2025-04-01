@@ -3,11 +3,15 @@ import matplotlib
 matplotlib.use("Agg")
 
 from PySide6.QtWidgets import QFileDialog
-from PySide6.QtCore import QStandardPaths
+from PySide6.QtCore import QStandardPaths, QFileInfo
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 from matplotlib.image import AxesImage
 from matplotlib.animation import FuncAnimation
+
+import tifffile as tiff
+
+import processing as pc
 
 from typing import List
 
@@ -28,6 +32,8 @@ class MplCanvas(FigureCanvasQTAgg):
         self.fps = 10
         self.cmap = 'viridis'
         self.mode = 'scat'
+
+        self.data_directory = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
 
     def update_image(self, intensities: np.ndarray = None, pxsize: float = None):
         if intensities is not None:
@@ -72,26 +78,43 @@ class MplCanvas(FigureCanvasQTAgg):
         return self.image,
 
     def save(self):
-        loc = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
         if self.anim:
-            filepath, selected_filter = QFileDialog.getSaveFileName(self, "Save Animation", loc,"GIF Files (*.gif)")
-            if filepath:
+            dialog = QFileDialog()
+            dialog.setNameFilters(("GIF Files (*.gif)", "TIFF file (*.tif)"))
+            dialog.setFileMode(QFileDialog.FileMode.AnyFile)
+            dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+            dialog.setDirectory(self.data_directory)
+            if dialog.exec():
+                filepath = dialog.selectedFiles()[0]
+                selected_filter = dialog.selectedNameFilter()
                 # Determine selected format from the filter
-                if "mp4" in selected_filter:
-                    format_extension = ".mp4"
+                if "tif" in selected_filter:
+                    format_extension = ".tif"
                 elif "gif" in selected_filter:
                     format_extension = ".gif"
-                else:
-                    print("Unknown format selected")
-                    return
                 if not filepath.lower().endswith(format_extension):
                     filepath += format_extension
 
-                self.anim.save(filepath, fps=self.fps)
+                if "tif" in selected_filter:
+                    intensities = np.array([intensity[self.mode] for intensity in self.intensities])
+                    
+                    minimum = np.min(intensities)
+                    maximum = np.max(intensities)
+                    intensities /= max(minimum, maximum)
+                    tiff.imwrite(filepath, pc.float_to_mono(intensities))
+                elif "gif" in selected_filter:
+                    self.anim.save(filepath, fps=self.fps)
+            self.data_directory = dialog.directory()
         elif self.image:
-            filepath, _ = QFileDialog.getSaveFileName(self, "Save Figure", loc,"Image Files(*.png *.jpg *.bmp)")
-            if filepath:
+            dialog = QFileDialog(self)
+            dialog.setNameFilter("Image Files(*.png *.jpg *.bmp)")
+            dialog.setFileMode(QFileDialog.FileMode.AnyFile)
+            dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+            dialog.setDirectory(self.data_directory)
+            if dialog.exec():
+                filepath = dialog.selectedFiles()[0]
                 self.figure.savefig(filepath)
+            self.data_directory = dialog.directory()
 
     def update_animation(self, intensities: List[np.ndarray] = None, pxsizes: List[float] = None, param_name: str = None, param: np.ndarray = None):
         if self.anim is not None:

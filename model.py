@@ -48,7 +48,9 @@ class DesignParams():
                 roi_size: float = 2, # micron
                 pxsize: float = 3.45, # micron
                 magnification: float = 80,
-                scat_mat: str = "polystyrene"):
+                scat_mat: str = "polystyrene",
+                x0: float = 0,
+                y0: float = 0):
         self.n_oil: float = n_oil
         self.n_oil0: float = n_oil0
         self.n_glass: float = n_glass
@@ -70,6 +72,8 @@ class DesignParams():
         self.roi_size: float = roi_size # micron
         self.pxsize: float = pxsize # micron
         self.magnification: float = magnification
+        self.x0: float = x0
+        self.y0: float = y0
     
     @property
     def scat_mat(self):
@@ -107,6 +111,8 @@ class DesignParams():
 
 class Camera():
     def __init__(self, params: DesignParams):
+        x0 = params.x0*10**-6
+        y0 = params.y0*10**-6
         self.roi_size = params.roi_size*10**-6
         self.pxsize = params.pxsize*10**-6
         self.magnification = params.magnification
@@ -116,8 +122,8 @@ class Camera():
         self.xs = np.linspace(-self.roi_size/2, self.roi_size/2, pixels)
         self.ys = np.linspace(-self.roi_size/2, self.roi_size/2, pixels)
         x, y = np.meshgrid(self.xs, self.ys)
-        self.r = np.sqrt(x**2 + y**2)
-        self.phi = np.arctan2(y, x)
+        self.r = np.sqrt((x-x0)**2 + (y-y0)**2)
+        self.phi = np.arctan2(y-y0, x-x0)
 
 
 def opd(angle_oil, p):
@@ -222,7 +228,8 @@ def Integral_2(r, p):
     return quad(integrand, 0, capture_angle_medium, complex_func=True)[0]
 
 def calculate_intensities(scatter_field, p: DesignParams, camera: Camera, r_resolution: int = 50):
-    rs = np.linspace(0, np.sqrt(2)*camera.roi_size/2, r_resolution)
+
+    rs = np.linspace(0, np.max(camera.r), r_resolution)
     wavelen = p.wavelen*10**-9 # m
     n_oil = p.n_oil
     polarization = np.array([np.cos(np.radians(p.inclination))*np.cos(np.radians(p.azimuth)), 
