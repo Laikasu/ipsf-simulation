@@ -108,6 +108,14 @@ class ParameterWindow(QDockWidget):
         self.t_glass0.setValue(self.params.t_glass0)
         self.t_glass0.valueChanged.connect(partial(self.set_parameter, self.params, "t_glass0"))
 
+        self.x0 = QDoubleSpinBox(minimum=-2, maximum=2, singleStep=0.1, decimals=2, suffix=" micron")
+        self.x0.setValue(self.params.x0)
+        self.x0.valueChanged.connect(partial(self.set_parameter, self.params, "x0"))
+
+        self.y0 = QDoubleSpinBox(minimum=-2, maximum=2, singleStep=0.1, decimals=2, suffix=" micron")
+        self.y0.setValue(self.params.y0)
+        self.y0.valueChanged.connect(partial(self.set_parameter, self.params, "y0"))
+
         self.z_particle = QDoubleSpinBox(minimum=0, maximum=10, singleStep=0.01, decimals=2, suffix=" micron")
         self.z_particle.setValue(self.params.z_p)
         self.z_particle.valueChanged.connect(partial(self.set_parameter, self.params, "z_p"))
@@ -196,7 +204,9 @@ class ParameterWindow(QDockWidget):
 
         self.variable_group = QGroupBox("Variables")
         variable_layout = QFormLayout()
-        variable_layout.addRow("Particle Position", self.z_particle)
+        variable_layout.addRow("Particle Position (x)", self.x0)
+        variable_layout.addRow("Particle Position (y)", self.y0)
+        variable_layout.addRow("Particle Position (z)", self.z_particle)
         variable_layout.addRow("Focal Position", self.z_focus)
         variable_layout.addRow("n_medium", self.n_medium)
         variable_layout.addRow("n_scatterer", self.n_scat)
