@@ -38,6 +38,11 @@ class PlotWindow(QWidget):
         self.show_scatter_act.setCheckable(True)
         self.show_scatter_act.setChecked(True)
         self.show_scatter_act.toggled.connect(self.plot.set_show_scat)
+
+        self.show_sig_act = QAction("Show Signal")
+        self.show_sig_act.setCheckable(True)
+        self.show_sig_act.setChecked(True)
+        self.show_sig_act.toggled.connect(self.plot.set_show_sig)
         
         self.show_derivatives_act = QAction("Show Derivatives")
         self.show_derivatives_act.setCheckable(True)
@@ -52,6 +57,7 @@ class PlotWindow(QWidget):
         view_menu = self.menu_bar.addMenu("View")
         view_menu.addAction(self.show_scatter_act)
         view_menu.addAction(self.show_interference_act)
+        view_menu.addAction(self.show_sig_act)
         view_menu.addAction(self.show_derivatives_act)
 
         plot_layout = QVBoxLayout()
@@ -77,11 +83,14 @@ class MplPlot(FigureCanvasQTAgg):
         self.contrast = {}
         self.show_scat = True
         self.show_if = True
+        self.show_sig = True
         self.show_derivatives = False
         self.plot_scat: List[Line2D] = None
         self.plot_if: List[Line2D] = None
+        self.plot_sig: List[Line2D] = None
         self.plot_scat_deriv: List[Line2D] = None
         self.plot_if_deriv: List[Line2D] = None
+        self.plot_sig_deriv: List[Line2D] = None
     
     def set_show_if(self, value):
         self.show_if = value
@@ -93,32 +102,44 @@ class MplPlot(FigureCanvasQTAgg):
         if self.plot_scat is not None:
             self.update_visibility()
     
+    def set_show_sig(self, value):
+        self.show_sig = value
+        if self.plot_sig is not None:
+            self.update_visibility()
+    
     def set_show_derivatives(self, show):
+        if show != self.show_derivatives:
+            self.figure.clf()
         self.show_derivatives = show
         self.update_plot()
     
     def update_plot(self):
         if self.show_derivatives:
-            self.figure.clf()
+            self.axes.cla()
             self.axes_deriv = self.figure.add_subplot(122)
             self.axes_deriv.set_title('Derivative of intensity')
             self.axes = self.figure.add_subplot(121)
             self.axes.set_title('Intensity')
             self.plot_scat, = self.axes.plot(self.param, self.contrast['scat'], label='scat')
             self.plot_if, = self.axes.plot(self.param, self.contrast['if'], label='if')
+            self.plot_sig, = self.axes.plot(self.param, self.contrast['sig'], label='signal')
             self.axes.legend()
             smooth_contrast_scat = savgol_filter(self.contrast['scat'], window_length=5, polyorder=2)
             smooth_contrast_if = savgol_filter(self.contrast['if'], window_length=5, polyorder=2)
+            smooth_contrast_sig = savgol_filter(self.contrast['sig'], window_length=5, polyorder=2)
             self.plot_scat_deriv, = self.axes_deriv.plot(self.param, np.gradient(smooth_contrast_scat, self.param))
             self.plot_if_deriv, = self.axes_deriv.plot(self.param, np.gradient(smooth_contrast_if, self.param))
+            self.plot_sig_deriv, = self.axes_deriv.plot(self.param, np.gradient(smooth_contrast_sig, self.param))
         else:
-            self.figure.clf()
+            self.axes.cla()
             self.axes = self.figure.add_subplot(111)
             self.axes.set_title('Intensity')
             self.plot_scat_deriv = None
             self.plot_if_deriv = None
+            self.plot_sig_deriv = None
             self.plot_scat, = self.axes.plot(self.param, self.contrast['scat'], label='scat')
             self.plot_if, = self.axes.plot(self.param, self.contrast['if'], label='if')
+            self.plot_sig, = self.axes.plot(self.param, self.contrast['sig'], label='signal')
             self.axes.legend()
         self.update_visibility()
 
@@ -129,22 +150,35 @@ class MplPlot(FigureCanvasQTAgg):
             self.plot_scat_deriv.set_visible(self.show_scat)
         if self.plot_if_deriv is not None:
             self.plot_if_deriv.set_visible(self.show_if)
+        if self.plot_sig_deriv is not None:
+            self.plot_sig_deriv.set_visible(self.show_sig)
         
         self.plot_scat.set_visible(self.show_scat)
         self.plot_if.set_visible(self.show_if)
+        self.plot_sig.set_visible(self.show_sig)
+
+        if self.show_derivatives:
+            self.axes_deriv.relim(visible_only=True)
+            self.axes_deriv.autoscale_view()
+        self.axes.relim(visible_only=True)
+        self.axes.autoscale_view()
         self.draw_idle()
 
 
     def plot(self, intensities, param):
         self.figure.clf()
         self.param = param
-        intensity = [intensity['scat'] for intensity in intensities]
+        intensity = np.array([intensity['scat'] for intensity in intensities])
         N, height, width = np.shape(intensity)
-        self.contrast['scat'] = [intensity[height//2, width//2] for intensity in intensity]
+        self.contrast['scat'] = intensity[:,height//2, width//2]
         
-        intensity = [intensity['if'] for intensity in intensities]
+        intensity = np.array([intensity['if'] for intensity in intensities])
         N, height, width = np.shape(intensity)
-        self.contrast['if'] = [intensity[height//2, width//2] for intensity in intensity]
+        self.contrast['if'] = intensity[:,height//2, width//2]
+
+        intensity = np.array([intensity['sig'] for intensity in intensities])
+        N, height, width = np.shape(intensity)
+        self.contrast['sig'] = intensity[:,height//2, width//2]
         
         self.update_plot()
 
