@@ -24,7 +24,7 @@ class MplCanvas(FigureCanvasQTAgg):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
         self.axes.set_axis_off()
-        fig.tight_layout(pad=0.5)
+        fig.tight_layout(pad=2)
         super().__init__(fig)
         
         self.image: AxesImage = None

@@ -90,9 +90,9 @@ class MainWindow(QMainWindow):
         self.set_if_act.setStatusTip("Show interference psf")
         self.set_if_act.triggered.connect(lambda: self.display.set_mode("if"))
         
-        self.set_tot_act = QAction("&Total", self)
-        self.set_tot_act.setStatusTip("Show total signal")
-        self.set_tot_act.triggered.connect(lambda: self.display.set_mode("tot"))
+        self.set_sig_act = QAction("&Signal", self)
+        self.set_sig_act.setStatusTip("Show total signal")
+        self.set_sig_act.triggered.connect(lambda: self.display.set_mode("sig"))
 
         self.set_viridis_act = QAction("viridis cmap", self)
         self.set_viridis_act.triggered.connect(lambda: self.display.set_cmap("viridis"))
@@ -128,7 +128,7 @@ class MainWindow(QMainWindow):
         view_menu.addSeparator()
         view_menu.addAction(self.set_scat_act)
         view_menu.addAction(self.set_if_act)
-        view_menu.addAction(self.set_tot_act)
+        view_menu.addAction(self.set_sig_act)
         view_menu.addAction(self.set_gray_act)
         view_menu.addAction(self.set_viridis_act)
 
