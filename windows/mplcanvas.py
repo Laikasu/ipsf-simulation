@@ -72,7 +72,7 @@ class MplCanvas(FigureCanvasQTAgg):
         if self.pxsizes is not None:
             self.pxsize = self.pxsizes[frame]
         if self.param is not None:
-            self.axes.set_title(self.param_name + f' = {self.param[frame]:.0f}')
+            self.axes.set_title(self.param_name + f' = {self.param[frame]:.2f}')
         width, height = intensity.shape
         self.image.set_extent((0, self.pxsize*width, 0, self.pxsize*height))
         return self.image,
