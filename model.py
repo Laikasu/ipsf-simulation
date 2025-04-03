@@ -22,7 +22,7 @@ n_ps = 1.5537
 n_air = 1
 n_water = 1.333
 n_glass = 1.499
-n_oil = 1.5018
+n_oil = 1.518
 n_glyc = 1.461
 
 class DesignParams():
@@ -31,7 +31,7 @@ class DesignParams():
                 n_oil: float = n_oil,
                 n_oil0: float = 1.5,
                 n_glass: float = n_glass,
-                n_glass0: float = 1.5,
+                n_glass0: float = n_glass,
                 n_medium: float = n_water,
                 t_oil0: float = 100, # micron
                 t_oil: float = 100, # micron
