@@ -7,12 +7,9 @@ import os
 # TO DO: other data
 # TO DO: name all formulae
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-# Magnozzi data for gold
-# https://refractiveindex.info/data_csv.php?datafile=database/data-nk/main/Au/Magnozzi-25C.yml
-# Johnsonn and Christy
-
-gold = np.genfromtxt(os.path.join(script_dir, 'Magnozzi-25C.csv'), delimiter=',', skip_header=1).T
+# Johnsonn and Christy data for gold
+# https://refractiveindex.info/?shelf=main&book=Au&page=Johnson
+gold = np.genfromtxt('Johnson.csv', delimiter=',', skip_header=1).T
 _gold_wavelen = gold[0]
 _n_gold = gold[1] - 1j*gold[2]
 n_gold = interp1d(_gold_wavelen*1000, _n_gold)
