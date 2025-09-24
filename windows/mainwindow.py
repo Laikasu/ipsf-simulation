@@ -178,10 +178,11 @@ class MainWindow(QMainWindow):
         # self.update_statistics_timer.start()
     
     def update_psf(self, params: DesignParams):
+        s = self.parameter_window
         camera = Camera(params)
         pxsize_obj = params.pxsize/params.magnification
-        scatter_field = calculate_scatter_field(params)
-        self.intensity = calculate_intensities(scatter_field, params, camera, r_resolution=self.parameter_window.rresolution)
+        scatter_field = calculate_scatter_field(params, multipolar=s.multipolar, angular=s.angular)
+        self.intensity = calculate_intensities(scatter_field, params, camera, r_resolution=s.rresolution)
         self.display.update_image(self.intensity, pxsize_obj)
     
     def sweep(self, params: DesignParams, param_name: str, param: np.ndarray):
