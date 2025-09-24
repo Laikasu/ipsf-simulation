@@ -10,25 +10,18 @@ import matplotlib.pyplot as plt
 
 # Single plot
 
-wavelength = 525
-diameter = 100*10**-9
-radius = diameter/2
-
 params = DesignParams(
-    azimuth=90,
-    #unpolarized=True,
-    z_p = 0,
-    z_focus = 0,
-    wavelen = wavelength,
+    azimuth=0,
+    inclination=90,
+    wavelen = 525,
     scat_mat="gold",
     n_medium = n_water,
-    a = radius,
-    roi_size=1,
+    diameter=100,
+    roi_size=2,
     magnification=100)
 
 camera = Camera(params)
-
-scatter_field = calculate_scatter_field(params)
+scatter_field = calculate_scatter_field(params, multipolar=False)
 intensity = calculate_intensities(scatter_field, params, camera)
 
 plt.imsave('colormap_image.png', intensity['scat'], cmap='viridis')
