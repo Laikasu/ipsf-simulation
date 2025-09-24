@@ -29,7 +29,8 @@ class ParameterWindow(QDockWidget):
 
         # Should probably go in params?
         self.rresolution: int = 40
-        self.scatterer: str = "gold"
+        self.multipolar: bool = True
+        self.angular: bool = True
 
         # Load from file
         # if QFileInfo.exists(parent.parameters_file):
@@ -40,9 +41,17 @@ class ParameterWindow(QDockWidget):
         #     except:
         #         print("failed loading params")
 
+        params_info = {
+            'magnification': {'minimum': 10, 'maximum': 200, 'singleStep': 10, 'suffix': 'x', 'is_double': False},
+            'roi_size': {'minimum': 0.2, 'maximum': 10, 'singleStep': 0.4, 'suffix': ' micron', 'is_double': True, 'decimals': 1},
+            'pxsize': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'suffix': ' micron', 'is_double': True, 'decimals': 2},
+            'wavelen': {'minimum': 300, 'maximum': 900, 'singleStep': 50, 'suffix': ' nm', 'is_double': False},
+            'azimuth': {'minimum': 0, 'maximum': 360, 'singleStep': 10, 'suffix': '°', 'is_double': False},
+            'inclination': {'minimum': 0, 'maximum': 90, 'singleStep': 10, 'suffix': '°', 'is_double': False}
+        }
         
         # All parameters
-        self.magnification = QSpinBox(value=self.params.magnification, minimum=10, maximum=200, singleStep=10, suffix="x")
+        self.magnification = QSpinBox(minimum=10, maximum=200, singleStep=10, suffix='x')
         self.magnification.setValue(self.params.magnification)
         self.magnification.valueChanged.connect(partial(self.set_parameter, self.params, "magnification"))
 
@@ -65,19 +74,34 @@ class ParameterWindow(QDockWidget):
         self.inclination = QSpinBox(minimum=0, maximum=90, singleStep=10, suffix="°")
         self.inclination.setValue(self.params.inclination)
         self.inclination.valueChanged.connect(partial(self.set_parameter, self.params, "inclination"))
-        
+
+        # Model
+
         self.resolution = QSpinBox(minimum=10, maximum=200, singleStep=10)
         self.resolution.setValue(self.rresolution)
         self.resolution.valueChanged.connect(partial(self.set_parameter, self, "rresolution"))
-        
+
         self.unpolarized = QCheckBox()
         self.unpolarized.setChecked(self.params.unpolarized)
         self.unpolarized.stateChanged.connect(lambda: self.set_parameter(self.params, "unpolarized", self.unpolarized.isChecked()))
+        self.unpolarized.stateChanged.connect(self.update)
+
+        self.angular_toggle = QCheckBox()
+        self.angular_toggle.setChecked(self.angular)
+        self.angular_toggle.stateChanged.connect(lambda: self.set_parameter(self, "angular", self.angular_toggle.isChecked()))
+        self.angular_toggle.stateChanged.connect(self.update)
+
+        self.multipolar_toggle = QCheckBox()
+        self.multipolar_toggle.setChecked(self.multipolar)
+        self.multipolar_toggle.stateChanged.connect(lambda: self.set_parameter(self, "multipolar", self.multipolar_toggle.isChecked()))
+        self.multipolar_toggle.stateChanged.connect(self.update)
+
+
 
         # Layers
 
         self.n_oil = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
-        self.n_oil.setValue(self.params.n_oil)
+        self.n_oil.setValue(self.params.n_oil0)
         self.n_oil.valueChanged.connect(partial(self.set_parameter, self.params, "n_oil"))
 
         self.n_oil0 = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
@@ -85,7 +109,7 @@ class ParameterWindow(QDockWidget):
         self.n_oil0.valueChanged.connect(partial(self.set_parameter, self.params, "n_oil0"))
 
         self.n_glass = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
-        self.n_glass.setValue(self.params.n_glass)
+        self.n_glass.setValue(self.params.n_glass0)
         self.n_glass.valueChanged.connect(partial(self.set_parameter, self.params, "n_glass"))
 
         self.n_glass0 = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
@@ -126,15 +150,20 @@ class ParameterWindow(QDockWidget):
         
         self.n_scat = QComboBox()
         self.n_scat.addItems(DesignParams.scat_materials)
+        self.n_scat.setCurrentText(self.params.scat_mat)
         self.n_scat.currentTextChanged.connect(partial(self.set_parameter, self.params, "scat_mat"))
+        self.n_scat.currentTextChanged.connect(self.update)
 
         self.n_medium = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
         self.n_medium.setValue(self.params.n_medium)
         self.n_medium.valueChanged.connect(partial(self.set_parameter, self.params, "n_medium"))
 
-        self.diameter = QSpinBox(minimum=1, maximum=100, singleStep=1, suffix=" nm")
+        self.diameter = QSpinBox(minimum=1, maximum=100, singleStep=10, suffix=" nm")
         self.diameter.setValue(self.params.diameter)
         self.diameter.valueChanged.connect(partial(self.set_parameter, self.params, "diameter"))
+
+        for param in [self.magnification, self.roi_size, self.pxsize, self.pxsize, self.wavelen, self.azimuth, self.inclination, self.resolution, self.n_oil, self.n_oil0, self.n_glass, self.n_glass0, self.t_oil, self.t_oil0, self.t_glass, self.t_glass0, self.x0, self.z_particle, self.z_focus, self.n_medium, self.diameter]:
+            param.editingFinished.connect(self.update)
 
 
         # Animation
@@ -155,6 +184,7 @@ class ParameterWindow(QDockWidget):
         self.fps.valueChanged.connect(self.fps_changed.emit)
         self.start_sweep = QPushButton("Start sweep")
         self.start_sweep.clicked.connect(self.sweep)
+        
         
 
         # Group into groups and tabs
@@ -177,6 +207,8 @@ class ParameterWindow(QDockWidget):
         self.model_group = QGroupBox("Model")
         model_layout = QFormLayout()
         model_layout.addRow("Radial Resolution", self.resolution)
+        model_layout.addRow("Multipolar", self.multipolar_toggle)
+        model_layout.addRow("Angular", self.angular_toggle)
         self.model_group.setLayout(model_layout)
 
         self.layers_group = QGroupBox("Layers")
@@ -247,9 +279,20 @@ class ParameterWindow(QDockWidget):
 
         self.anim_tab.setLayout(animtab_layout)
     
+    def update(self):
+        if self.changed:
+            self.update_psf.emit(self.params)
+            self.changed = False
+    
     def set_parameter(self, obj, name, value):
         setattr(obj, name, value)
-        self.update_psf.emit(self.params)
+        self.changed = True
+        self.update_controls()
+
+    
+    def update_controls(self):
+        self.angular_toggle.setEnabled(self.multipolar)
+        
     
     def sweep(self):
         param = np.linspace(self.start.value(), self.stop.value(), self.num.value())
