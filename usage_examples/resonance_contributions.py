@@ -1,6 +1,4 @@
 import numpy as np
-
-
 import sys, os
 
 sys.path.append(os.path.dirname(__file__) + "/..")
@@ -8,6 +6,7 @@ from model import *
 
 import matplotlib.pyplot as plt
 
+# Find resonance contributions to scattering from 40nm AuNS
 
 
 params = DesignParams(scat_mat="gold", diameter=40)
