@@ -24,6 +24,7 @@ class ParameterWindow(QDockWidget):
         super().__init__(name, parent)
         # should probably have associated units
         self.params = DesignParams()
+        self.changed = False
         self.tabwidget = QTabWidget(self)
         self.setWidget(self.tabwidget)
 

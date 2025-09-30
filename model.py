@@ -12,26 +12,41 @@ import os
 gold = np.genfromtxt('Johnson.csv', delimiter=',', skip_header=1).T
 _gold_wavelen = gold[0]
 _n_gold = gold[1] - 1j*gold[2]
-n_gold = interp1d(_gold_wavelen*1000, _n_gold)
+n_gold = interp1d(_gold_wavelen*1000, _n_gold, kind='cubic')
 
 import scipy.constants as const
 
 
-res_p=8.45
-def drude_lorenz_gold(wavelen):
-    # Constants from Improved Drude-Lorentz dielectric function for gold nanospheres
-    # Anthony Centeno
-    f = np.array([0.98, 0.1222, 0.2492, 2.7845, 0.1082, 7.8214])[:]
-    res_0 = np.array([0, 3.5684, 4.2132, 9.1499, 2.9144, 38.9633])[:]
-    damping = np.array([0.044113, 0.97329, 1.1139, 0.4637, 0.70308, 0.48978])[:]
-    # Rakic et al.
-    # f = np.array([0.760, 0.024, 0.010, 0.071, 0.601, 4.384])
-    # res_0 = np.array([0, 0.415, 0.830, 2.969, 4.304, 13.32])
-    # damping = np.array([0.053, 0.241, 0.345, 0.870, 2.494, 2.214])
+def drude_lorenz_gold(wavelen, order=-1):
+    # Rakic et al. 1998 parameters
+    f = np.array([0.760, 0.024, 0.010, 0.071, 0.601, 4.384])[:order]
+    damping = np.array([0.053, 0.241, 0.345, 0.870, 2.494, 2.214])[:order] # 0.053
+    res_0 = np.array([0, 0.415, 0.830, 2.969, 4.304, 13.32])[:order]
+    res_p = 9.03
+    
 
+    freq_eV = const.h * const.c / (wavelen * 1e-9) / const.e
 
-    freq_eV = const.h*const.c/wavelen/10**-9/const.e
-    return np.sqrt(1 + np.sum(f*res_p**2/(res_0**2-freq_eV**2-1j*freq_eV*damping)))
+    # Drude term (j=0)
+    drude = -f[0] * res_p**2 / (freq_eV**2 + 1j*freq_eV*damping[0])
+    # Lorentz terms (j=1+)
+    lorentz = np.sum(f[1:] * res_p**2 / (res_0[1:]**2 - freq_eV**2 - 1j * freq_eV * damping[1:]))
+    epsilon = 1 + drude + lorentz
+    return np.sqrt(epsilon)
+
+def drude_gold(wavelen):
+    # Johnson and Christy
+    f = 1
+    tau = 9*10**-15
+    damping = const.hbar/tau/const.e
+    res_p = 9.06
+    
+
+    freq_eV = const.h * const.c / (wavelen * 1e-9) / const.e
+
+    drude = -f * res_p**2 / (freq_eV**2 + 1j*freq_eV*damping)
+    epsilon = 1 + drude
+    return np.sqrt(epsilon)
 
 
 n_ps = 1.5537
@@ -98,8 +113,8 @@ class DesignParams():
         if self.scat_mat == "gold":
             if self._gold_model == 'experiment':
                 self.n_scat = n_gold(self._wavelen)
-            elif self._gold_model == 'drude-lorenz':
-                self.n_scat = drude_lorenz_gold(self._wavelen)
+            elif self._gold_model == 'bound':
+                self.n_scat = n_gold(self._wavelen) - drude_gold(self._wavelen)
     
     @property
     def scat_mat(self):
@@ -122,7 +137,7 @@ class DesignParams():
     
     @gold_model.setter
     def gold_model(self, value: str):
-        if value not in ['experiment', 'drude-lorenz']:
+        if value not in ['experiment', 'bound']:
             raise ValueError('This model is not implemented')
         else:
             self._gold_model = value
