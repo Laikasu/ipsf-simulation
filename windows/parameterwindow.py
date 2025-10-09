@@ -31,7 +31,7 @@ class ParameterWindow(QDockWidget):
         # Should probably go in params?
         self.rresolution: int = 40
         self.multipolar: bool = True
-        self.angular: bool = True
+        self.angular: bool = False
 
         # Load from file
         # if QFileInfo.exists(parent.parameters_file):

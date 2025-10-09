@@ -31,7 +31,7 @@ class MplCanvas(FigureCanvasQTAgg):
         self.anim: FuncAnimation = None
         self.fps = 10
         self.cmap = 'viridis'
-        self.mode = 'scat'
+        self.mode = 'signal'
 
         self.data_directory = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
 

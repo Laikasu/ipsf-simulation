@@ -10,8 +10,8 @@ import copy
 from windows.mplcanvas import MplCanvas
 from windows.mplplot import MplPlot
 from windows.mplplot import PlotWindow
-from model import *
 
+import model
 from windows.parameterwindow import ParameterWindow
 
 class MainWindow(QMainWindow):
@@ -82,17 +82,17 @@ class MainWindow(QMainWindow):
         self.show_plot_act.triggered.connect(lambda: self.plot_window.setVisible(not self.plot_window.isVisible()))
         self.show_plot_act.setShortcut(Qt.CTRL | Qt.SHIFT | Qt.Key_S)
 
-        self.set_scat_act = QAction("&Scatter", self)
-        self.set_scat_act.setStatusTip("Show scatter psf")
-        self.set_scat_act.triggered.connect(lambda: self.display.set_mode("scat"))
+        self.set_scat_act = QAction("&Scattering", self)
+        self.set_scat_act.setStatusTip("Show scattering psf")
+        self.set_scat_act.triggered.connect(lambda: self.display.set_mode("scattering"))
 
         self.set_if_act = QAction("&Interference", self)
         self.set_if_act.setStatusTip("Show interference psf")
-        self.set_if_act.triggered.connect(lambda: self.display.set_mode("if"))
+        self.set_if_act.triggered.connect(lambda: self.display.set_mode("interference"))
         
         self.set_sig_act = QAction("&Signal", self)
         self.set_sig_act.setStatusTip("Show total signal")
-        self.set_sig_act.triggered.connect(lambda: self.display.set_mode("sig"))
+        self.set_sig_act.triggered.connect(lambda: self.display.set_mode("signal"))
 
         self.set_viridis_act = QAction("viridis cmap", self)
         self.set_viridis_act.triggered.connect(lambda: self.display.set_cmap("viridis"))
@@ -177,25 +177,31 @@ class MainWindow(QMainWindow):
         # self.update_statistics_timer.timeout.connect(self.onUpdateStatisticsTimer)
         # self.update_statistics_timer.start()
     
-    def update_psf(self, params: DesignParams):
+    def update_psf(self, params: model.DesignParams):
         s = self.parameter_window
-        camera = Camera(params)
         pxsize_obj = params.pxsize/params.magnification
-        scatter_field = calculate_scatter_field(params, multipolar=s.multipolar, angular=s.angular)
-        self.intensity = calculate_intensities(scatter_field, params, camera, r_resolution=s.rresolution)
+        scatter_field = model.calculate_scatter_field(params, multipolar=s.multipolar, angular=s.angular)
+        signal=['scattering', 'interference', 'signal']
+        intensity = model.calculate_intensities(scatter_field, params, r_resolution=s.rresolution,
+                                                signal=signal)
+        self.intensity = {s:I for s, I in zip(signal, intensity)}
         self.display.update_image(self.intensity, pxsize_obj)
     
-    def sweep(self, params: DesignParams, param_name: str, param: np.ndarray):
+    def sweep(self, params: model.DesignParams, param_name: str, param):
         self.intensity = []
 
         params = copy.copy(params)
         pxsizes = []
+        signal = ['scattering', 'interference', 'signal']
         for p in param:
             setattr(params, param_name, p)
-            camera = Camera(params)
-            scatter_field = calculate_scatter_field(params)
-            intensity = calculate_intensities(scatter_field, params, camera, r_resolution=self.parameter_window.rresolution)
-            self.intensity.append(intensity)
+            scatter_field = model.calculate_scatter_field(params)
+            intensity = model.calculate_intensities(scatter_field, params,
+                                                    r_resolution=self.parameter_window.rresolution,
+                                                    signal=['scattering', 'interference', 'signal'])
+            
+
+            self.intensity.append({s:I for s, I in zip(signal, intensity)})
             pxsizes.append(params.pxsize/params.magnification)
         
         self.display.update_animation(self.intensity, pxsizes, param_name, param)
