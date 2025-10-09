@@ -120,13 +120,13 @@ class MplPlot(FigureCanvasQTAgg):
             self.axes_deriv.set_title('Derivative of intensity')
             self.axes = self.figure.add_subplot(121)
             self.axes.set_title('Intensity')
-            self.plot_scat, = self.axes.plot(self.param, self.contrast['scat'], label='scat')
-            self.plot_if, = self.axes.plot(self.param, self.contrast['if'], label='if')
-            self.plot_sig, = self.axes.plot(self.param, self.contrast['sig'], label='signal')
+            self.plot_scat, = self.axes.plot(self.param, self.contrast['scattering'], label='scattering')
+            self.plot_if, = self.axes.plot(self.param, self.contrast['interference'], label='interference')
+            self.plot_sig, = self.axes.plot(self.param, self.contrast['signal'], label='signal')
             self.axes.legend()
-            smooth_contrast_scat = savgol_filter(self.contrast['scat'], window_length=5, polyorder=2)
-            smooth_contrast_if = savgol_filter(self.contrast['if'], window_length=5, polyorder=2)
-            smooth_contrast_sig = savgol_filter(self.contrast['sig'], window_length=5, polyorder=2)
+            smooth_contrast_scat = savgol_filter(self.contrast['scattering'], window_length=5, polyorder=2)
+            smooth_contrast_if = savgol_filter(self.contrast['interference'], window_length=5, polyorder=2)
+            smooth_contrast_sig = savgol_filter(self.contrast['signal'], window_length=5, polyorder=2)
             self.plot_scat_deriv, = self.axes_deriv.plot(self.param, np.gradient(smooth_contrast_scat, self.param))
             self.plot_if_deriv, = self.axes_deriv.plot(self.param, np.gradient(smooth_contrast_if, self.param))
             self.plot_sig_deriv, = self.axes_deriv.plot(self.param, np.gradient(smooth_contrast_sig, self.param))
@@ -137,9 +137,9 @@ class MplPlot(FigureCanvasQTAgg):
             self.plot_scat_deriv = None
             self.plot_if_deriv = None
             self.plot_sig_deriv = None
-            self.plot_scat, = self.axes.plot(self.param, self.contrast['scat'], label='scat')
-            self.plot_if, = self.axes.plot(self.param, self.contrast['if'], label='if')
-            self.plot_sig, = self.axes.plot(self.param, self.contrast['sig'], label='signal')
+            self.plot_scat, = self.axes.plot(self.param, self.contrast['scattering'], label='scattering')
+            self.plot_if, = self.axes.plot(self.param, self.contrast['interference'], label='interference')
+            self.plot_sig, = self.axes.plot(self.param, self.contrast['signal'], label='signal')
             self.axes.legend()
         self.update_visibility()
 
@@ -168,17 +168,17 @@ class MplPlot(FigureCanvasQTAgg):
     def plot(self, intensities, param):
         self.figure.clf()
         self.param = param
-        intensity = np.array([intensity['scat'] for intensity in intensities])
+        intensity = np.array([intensity['scattering'] for intensity in intensities])
         N, height, width = np.shape(intensity)
-        self.contrast['scat'] = intensity[:,height//2, width//2]
+        self.contrast['scattering'] = intensity[:,height//2, width//2]
         
-        intensity = np.array([intensity['if'] for intensity in intensities])
+        intensity = np.array([intensity['interference'] for intensity in intensities])
         N, height, width = np.shape(intensity)
-        self.contrast['if'] = intensity[:,height//2, width//2]
+        self.contrast['interference'] = intensity[:,height//2, width//2]
 
-        intensity = np.array([intensity['sig'] for intensity in intensities])
+        intensity = np.array([intensity['signal'] for intensity in intensities])
         N, height, width = np.shape(intensity)
-        self.contrast['sig'] = intensity[:,height//2, width//2]
+        self.contrast['signal'] = intensity[:,height//2, width//2]
         
         self.update_plot()
 
