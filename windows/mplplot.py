@@ -168,15 +168,15 @@ class MplPlot(FigureCanvasQTAgg):
     def plot(self, intensities, param):
         self.figure.clf()
         self.param = param
-        intensity = np.array([intensity['scattering'] for intensity in intensities])
+        intensity = intensities['scattering']
         N, height, width = np.shape(intensity)
         self.contrast['scattering'] = intensity[:,height//2, width//2]
         
-        intensity = np.array([intensity['interference'] for intensity in intensities])
+        intensity = intensities['interference']
         N, height, width = np.shape(intensity)
         self.contrast['interference'] = intensity[:,height//2, width//2]
 
-        intensity = np.array([intensity['signal'] for intensity in intensities])
+        intensity = intensities['signal']
         N, height, width = np.shape(intensity)
         self.contrast['signal'] = intensity[:,height//2, width//2]
         
