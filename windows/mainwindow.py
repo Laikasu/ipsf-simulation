@@ -179,22 +179,25 @@ class MainWindow(QMainWindow):
     
     def update_psf(self, params: dict):
         # pxsize is necessary for scalebar
-        pxsize = params['pxsize'] if 'pxsize' in params else model.pxsize
-        magnification = params['magnification'] if 'magnification' in params else model.magnification
+        pxsize = params['pxsize'] if 'pxsize' in params else model.PXSIZE
+        magnification = params['magnification'] if 'magnification' in params else model.MAGNIFICATION
         pxsize_obj = pxsize/magnification
         signal=['scattering', 'interference', 'signal']
 
-        intensity = model.simulate_camera(signal=signal, **params)
-        self.intensity = {s:I for s, I in zip(signal, intensity)}
+        interference_contrast, scattering_contrast = model.simulate_camera(**params)
+        self.intensity = {'scattering': scattering_contrast,
+                          'interference': interference_contrast,
+                          'signal': scattering_contrast + interference_contrast}
         self.display.update_image(self.intensity, pxsize_obj)
     
     def sweep(self, params: dict):
-        pxsize = params['pxsize'] if 'pxsize' in params else model.pxsize
-        magnification = params['magnification'] if 'magnification' in params else model.magnification
+        pxsize = params['pxsize'] if 'pxsize' in params else model.PXSIZE
+        magnification = params['magnification'] if 'magnification' in params else model.MAGNIFICATION
 
-        signal = ['scattering', 'interference', 'signal']
-        intensity = model.simulate_camera(signal=signal,**params)
-        self.intensity = {s:I for s, I in zip(signal, np.moveaxis(intensity, 1, 0))}
+        interference_contrast, scattering_contrast = model.simulate_camera(**params)
+        self.intensity = {'scattering': scattering_contrast,
+                          'interference': interference_contrast,
+                          'signal': scattering_contrast + interference_contrast}
         pxsizes = (pxsize/magnification)
 
         param_name, param = [(k,v) for (k,v) in params.items() if isinstance(v, np.ndarray)][0]
