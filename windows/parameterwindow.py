@@ -50,65 +50,65 @@ class ParameterWindow(QDockWidget):
         
         # All parameters
         self.magnification = QSpinBox(**params_info['magnification'])
-        self.magnification.setValue(model.MAGNIFICATION)
+        self.magnification.setValue(model.defaults['magnification'])
         self.magnification.valueChanged.connect(partial(self.changed_value, 'magnification'))
 
         self.roi_size = QDoubleSpinBox(**params_info['roi_size'])
-        self.roi_size.setValue(model.ROI_SIZE*10**6)
+        self.roi_size.setValue(model.defaults['roi_size']*10**6)
         self.roi_size.valueChanged.connect(partial(self.changed_value, 'roi_size'))
 
         self.pxsize = QDoubleSpinBox(**params_info['roi_size'])
-        self.pxsize.setValue(model.PXSIZE*10**6)
+        self.pxsize.setValue(model.defaults['pxsize']*10**6)
         self.pxsize.valueChanged.connect(partial(self.changed_value, 'pxsize'))
 
         self.wavelen = QDoubleSpinBox(**params_info['wavelen'])
-        self.wavelen.setValue(model.WAVELEN*10**9)
+        self.wavelen.setValue(model.defaults['wavelen']*10**9)
         self.wavelen.valueChanged.connect(partial(self.changed_value, 'wavelen'))
 
         # Angles
         self.azimuth = QSpinBox(**params_info['azimuth'])
-        self.azimuth.setValue(model.AZIMUTH)
+        self.azimuth.setValue(model.defaults['azimuth'])
         self.azimuth.valueChanged.connect(partial(self.changed_value, 'azimuth'))
     
         self.inclination = QSpinBox(**params_info['inclination'])
-        self.inclination.setValue(model.INCLINATION)
+        self.inclination.setValue(model.defaults['inclination'])
         self.inclination.valueChanged.connect(partial(self.changed_value, 'inclination'))
 
         self.beam_angle = QSpinBox(**params_info['inclination'])
-        self.beam_angle.setValue(model.BEAM_ANGLE)
+        self.beam_angle.setValue(model.defaults['beam_angle'])
         self.beam_angle.valueChanged.connect(partial(self.changed_value, 'beam_angle'))
 
         self.beam_azimuth = QSpinBox(**params_info['azimuth'])
-        self.beam_azimuth.setValue(model.BEAM_AZIMUTH)
+        self.beam_azimuth.setValue(model.defaults['beam_azimuth'])
         self.beam_azimuth.valueChanged.connect(partial(self.changed_value, 'beam_azimuth'))
 
         self.polarization_azimuth = QSpinBox(**params_info['azimuth'])
-        self.polarization_azimuth.setValue(model.POLARIZATION_AZIMUTH)
+        self.polarization_azimuth.setValue(model.defaults['polarization_azimuth'])
         self.polarization_azimuth.valueChanged.connect(partial(self.changed_value, 'polarization_azimuth'))
 
         # Model
 
         self.resolution = QSpinBox(**params_info['r_resolution'])
-        self.resolution.setValue(model.R_RESOLUTION)
+        self.resolution.setValue(model.defaults['r_resolution'])
         self.resolution.valueChanged.connect(partial(self.changed_value, 'r_resolution'))
 
         self.polarized = QCheckBox()
-        self.polarized.setChecked(model.POLARIZED)
+        self.polarized.setChecked(model.defaults['polarized'])
         self.polarized.stateChanged.connect(partial(self.changed_value, 'polarized'))
         self.polarized.stateChanged.connect(self.update_controls)
 
         self.aberrations = QCheckBox()
-        self.aberrations.setChecked(model.ABERRATIONS)
+        self.aberrations.setChecked(model.defaults['aberrations'])
         self.aberrations.stateChanged.connect(partial(self.changed_value, 'aberrations'))
         self.aberrations.stateChanged.connect(self.update_controls)
 
         self.anisotropic = QCheckBox()
-        self.anisotropic.setChecked(model.ANISOTROPIC)
+        self.anisotropic.setChecked(model.defaults['anisotropic'])
         self.anisotropic.stateChanged.connect(partial(self.changed_value, 'anisotropic'))
         self.anisotropic.stateChanged.connect(self.update_controls)
 
         self.multipolar_toggle = QCheckBox()
-        self.multipolar_toggle.setChecked(model.MULTIPOLAR)
+        self.multipolar_toggle.setChecked(model.defaults['multipolar'])
         self.multipolar_toggle.stateChanged.connect(partial(self.changed_value, 'multipolar'))
 
 
@@ -132,44 +132,44 @@ class ParameterWindow(QDockWidget):
         self.n_glass0.valueChanged.connect(partial(self.changed_value, 'n_glass0'))
 
         self.t_oil0 = QDoubleSpinBox(**params_info['thickness'])
-        self.t_oil0.setValue(model.t_oil*10**6)
+        self.t_oil0.setValue(model.defaults['t_oil']*10**6)
         self.t_oil0.valueChanged.connect(partial(self.changed_value, 't_oil0'))
 
         self.t_glass = QDoubleSpinBox(**params_info['thickness'])
-        self.t_glass.setValue(model.t_glass*10**6)
+        self.t_glass.setValue(model.defaults['t_glass']*10**6)
         self.t_glass.valueChanged.connect(partial(self.changed_value, 't_glass'))
 
         self.t_glass0 = QDoubleSpinBox(**params_info['thickness'])
-        self.t_glass0.setValue(model.t_glass*10**6)
+        self.t_glass0.setValue(model.defaults['t_glass']*10**6)
         self.t_glass0.valueChanged.connect(partial(self.changed_value, 't_glass0'))
 
         self.x0 = QDoubleSpinBox(**params_info['xy_position'])
-        self.x0.setValue(model.X0)
+        self.x0.setValue(model.defaults['x0'])
         self.x0.valueChanged.connect(partial(self.changed_value, 'x0'))
 
         self.y0 = QDoubleSpinBox(**params_info['xy_position'])
-        self.y0.setValue(model.Y0)
+        self.y0.setValue(model.defaults['y0'])
         self.y0.valueChanged.connect(partial(self.changed_value, 'y0'))
 
         self.z_particle = QDoubleSpinBox(**params_info['z_particle'])
-        self.z_particle.setValue(model.Z_P)
+        self.z_particle.setValue(model.defaults['z_p'])
         self.z_particle.valueChanged.connect(partial(self.changed_value, 'z_p'))
 
         self.defocus = QDoubleSpinBox(**params_info['defocus'])
-        self.defocus.setValue(model.DEFOCUS)
+        self.defocus.setValue(model.defaults['defocus'])
         self.defocus.valueChanged.connect(partial(self.changed_value, 'defocus'))
         
         self.n_scat = QComboBox()
         self.n_scat.addItems(('gold', 'polystyrene'))
-        self.n_scat.setCurrentText(model.SCAT_MAT)
+        self.n_scat.setCurrentText(model.defaults['scat_mat'])
         self.n_scat.currentTextChanged.connect(partial(self.changed_value, 'scat_mat'))
 
         self.n_medium = QDoubleSpinBox(**params_info['RI'])
-        self.n_medium.setValue(model.n_medium)
+        self.n_medium.setValue(model.defaults['n_medium'])
         self.n_medium.valueChanged.connect(partial(self.changed_value, 'n_medium'))
 
         self.diameter = QDoubleSpinBox(**params_info['diameter'])
-        self.diameter.setValue(model.DIAMETER*10**9)
+        self.diameter.setValue(model.defaults['diameter']*10**9)
         self.diameter.valueChanged.connect(partial(self.changed_value, 'diameter'))
 
         # Animation
