@@ -179,8 +179,8 @@ class MainWindow(QMainWindow):
     
     def update_psf(self, params: dict):
         # pxsize is necessary for scalebar
-        pxsize = params['pxsize'] if 'pxsize' in params else model.PXSIZE
-        magnification = params['magnification'] if 'magnification' in params else model.MAGNIFICATION
+        pxsize = params.get('pxsize', model.defaults['pxsize'])
+        magnification = params.get('magnification', model.defaults['magnification'])
         pxsize_obj = pxsize/magnification
         signal=['scattering', 'interference', 'signal']
 
@@ -191,8 +191,8 @@ class MainWindow(QMainWindow):
         self.display.update_image(self.intensity, pxsize_obj)
     
     def sweep(self, params: dict):
-        pxsize = params['pxsize'] if 'pxsize' in params else model.PXSIZE
-        magnification = params['magnification'] if 'magnification' in params else model.MAGNIFICATION
+        pxsize = params.get('pxsize', model.defaults['pxsize'])
+        magnification = params.get('magnification', model.defaults['magnification'])
 
         interference_contrast, scattering_contrast = model.simulate_camera(**params)
         self.intensity = {'scattering': scattering_contrast,
