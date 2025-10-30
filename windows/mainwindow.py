@@ -4,8 +4,8 @@ from PySide6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QF
 
 import json
 import os
-import copy
 
+import numpy as np
 
 from windows.mplcanvas import MplCanvas
 from windows.mplplot import MplPlot
@@ -177,32 +177,27 @@ class MainWindow(QMainWindow):
         # self.update_statistics_timer.timeout.connect(self.onUpdateStatisticsTimer)
         # self.update_statistics_timer.start()
     
-    def update_psf(self, params: model.DesignParams):
-        s = self.parameter_window
-        pxsize_obj = params.pxsize/params.magnification
-        scatter_field = model.calculate_scatter_field(params, multipolar=s.multipolar, angular=s.angular)
+    def update_psf(self, params: dict):
+        # pxsize is necessary for scalebar
+        pxsize = params['pxsize'] if 'pxsize' in params else model.pxsize
+        magnification = params['magnification'] if 'magnification' in params else model.magnification
+        pxsize_obj = pxsize/magnification
         signal=['scattering', 'interference', 'signal']
-        intensity = model.calculate_intensities(scatter_field, params, r_resolution=s.rresolution,
-                                                signal=signal)
+
+        intensity = model.simulate_camera(signal=signal, **params)
         self.intensity = {s:I for s, I in zip(signal, intensity)}
         self.display.update_image(self.intensity, pxsize_obj)
     
-    def sweep(self, params: model.DesignParams, param_name: str, param):
-        self.intensity = []
+    def sweep(self, params: dict):
+        pxsize = params['pxsize'] if 'pxsize' in params else model.pxsize
+        magnification = params['magnification'] if 'magnification' in params else model.magnification
 
-        params = copy.copy(params)
-        pxsizes = []
         signal = ['scattering', 'interference', 'signal']
-        for p in param:
-            setattr(params, param_name, p)
-            scatter_field = model.calculate_scatter_field(params)
-            intensity = model.calculate_intensities(scatter_field, params,
-                                                    r_resolution=self.parameter_window.rresolution,
-                                                    signal=['scattering', 'interference', 'signal'])
-            
+        intensity = model.simulate_camera(signal=signal,**params)
+        self.intensity = {s:I for s, I in zip(signal, np.moveaxis(intensity, 1, 0))}
+        pxsizes = (pxsize/magnification)
 
-            self.intensity.append({s:I for s, I in zip(signal, intensity)})
-            pxsizes.append(params.pxsize/params.magnification)
+        param_name, param = [(k,v) for (k,v) in params.items() if isinstance(v, np.ndarray)][0]
         
         self.display.update_animation(self.intensity, pxsizes, param_name, param)
         self.plot.plot(self.intensity, param)

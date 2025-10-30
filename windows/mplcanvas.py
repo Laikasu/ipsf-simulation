@@ -39,7 +39,7 @@ class MplCanvas(FigureCanvasQTAgg):
         if intensities is not None:
             self.intensities = intensities
         frame = self.intensities[self.mode]
-        width, height = frame.shape
+        rows, cols = frame.shape
         if self.anim is not None:
             self.anim.pause()
             self.anim = None
@@ -47,7 +47,7 @@ class MplCanvas(FigureCanvasQTAgg):
             self.image = self.axes.imshow(frame, cmap=self.cmap)
             if pxsize is not None:
                 self.pxsize = pxsize
-                self.image.set_extent((0, pxsize*width, 0, pxsize*height))
+                self.image.set_extent((0, pxsize*rows, 0, pxsize*cols))
             self.colorbar = self.figure.colorbar(self.image)
             scalebar = AnchoredSizeBar(self.axes.transData, 0.2, '200 nm', 'lower center', pad=0.1, frameon=False, color='white', sep=5)
             self.axes.add_artist(scalebar)
@@ -58,7 +58,7 @@ class MplCanvas(FigureCanvasQTAgg):
             if pxsize:
                 self.pxsize = pxsize
 
-            self.image.set_extent((0, self.pxsize*width, 0, self.pxsize*height))
+            self.image.set_extent((0, self.pxsize*rows, 0, self.pxsize*cols))
             # Double bc it doesnt set them simultaneously
             self.image.set_clim(np.min(frame), np.max(frame))
             self.image.set_clim(np.min(frame), np.max(frame))
@@ -67,14 +67,14 @@ class MplCanvas(FigureCanvasQTAgg):
     
 
     def animate(self, frame: int):
-        intensity = self.intensities[frame][self.mode]
+        intensity = self.intensities[self.mode][frame]
         self.image.set_data(intensity)
-        if self.pxsizes is not None:
+        if self.pxsizes is not None and np.iterable(self.pxsizes):
             self.pxsize = self.pxsizes[frame]
         if self.param is not None:
             self.axes.set_title(self.param_name + f' = {self.param[frame]:.2f}')
-        width, height = intensity.shape
-        self.image.set_extent((0, self.pxsize*width, 0, self.pxsize*height))
+        rows, cols = intensity.shape
+        self.image.set_extent((0, self.pxsize*rows, 0, self.pxsize*cols))
         return self.image,
 
     def save(self):
@@ -128,7 +128,7 @@ class MplCanvas(FigureCanvasQTAgg):
         if param is not None:
             self.param = param
 
-        intensities = [intensity[self.mode] for intensity in self.intensities]
+        intensities = self.intensities[self.mode]
         minimum = np.min(intensities)
         maximum = np.max(intensities)
         self.image.set_clim(minimum, maximum)

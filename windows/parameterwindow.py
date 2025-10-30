@@ -1,178 +1,183 @@
 from PySide6.QtWidgets import QWidget, QLabel, QFormLayout, QDoubleSpinBox, QCheckBox, QSpinBox, QGroupBox, QTabWidget, QHBoxLayout, QVBoxLayout, QComboBox, QPushButton, QGridLayout, QDockWidget
 from PySide6.QtCore import Signal, Qt, QFileInfo, QTimer
 
-
-from model import DesignParams
-import json
-from functools import partial
-
-from model import *
 import numpy as np
+import model
 
+from functools import partial
 
 # TO DO: Parameter overhaul
 
 class ParameterWindow(QDockWidget):
-    """Window where you set the parameters."""
+    '''Window where you set the parameters.'''
 
-    update_psf = Signal(DesignParams)
-    sweep_params = Signal(DesignParams, str, np.ndarray)
+    update_psf = Signal(dict)
+    sweep_params = Signal(dict)
     fps_changed = Signal(int)
 
 
     def __init__(self, name, parent=None):
         super().__init__(name, parent)
         # should probably have associated units
-        self.params = DesignParams()
-        self.changed = False
+        self.params = {}
         self.tabwidget = QTabWidget(self)
         self.setWidget(self.tabwidget)
-
-        # Should probably go in params?
-        self.rresolution: int = 40
-        self.multipolar: bool = True
-        self.angular: bool = False
 
         # Load from file
         # if QFileInfo.exists(parent.parameters_file):
         #     # Load info from parameters file
         #     try:
         #         with open(parent.parameters_file, 'r') as file:
-        #             self.params = DesignParams(**json.load(file))
+        #             model = DesignParams(**json.load(file))
         #     except:
-        #         print("failed loading params")
+        #         print('failed loading params')
 
         params_info = {
-            'magnification': {'minimum': 10, 'maximum': 200, 'singleStep': 10, 'suffix': 'x', 'is_double': False},
-            'roi_size': {'minimum': 0.2, 'maximum': 10, 'singleStep': 0.4, 'suffix': ' micron', 'is_double': True, 'decimals': 1},
-            'pxsize': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'suffix': ' micron', 'is_double': True, 'decimals': 2},
-            'wavelen': {'minimum': 300, 'maximum': 900, 'singleStep': 50, 'suffix': ' nm', 'is_double': False},
-            'azimuth': {'minimum': 0, 'maximum': 360, 'singleStep': 10, 'suffix': '°', 'is_double': False},
-            'inclination': {'minimum': 0, 'maximum': 90, 'singleStep': 10, 'suffix': '°', 'is_double': False}
+            'magnification': {'minimum': 10, 'maximum': 200, 'singleStep': 10, 'suffix': 'x'},
+            'roi_size': {'minimum': 0.2, 'maximum': 10, 'singleStep': 0.4, 'suffix': ' micron', 'decimals': 1},
+            'pxsize': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'suffix': ' micron', 'decimals': 2},
+            'wavelen': {'minimum': 300, 'maximum': 900, 'singleStep': 50, 'suffix': ' nm'},
+            'azimuth': {'minimum': 0, 'maximum': 360, 'singleStep': 10, 'suffix': '°'},
+            'inclination': {'minimum': 0, 'maximum': 90, 'singleStep': 2, 'suffix': '°'},
+            'RI': {'minimum': 1, 'maximum': 10, 'singleStep': 0.01, 'decimals': 4},
+            'thickness': {'minimum': 1, 'maximum': 1000, 'singleStep':1, 'decimals': 0, 'suffix': ' micron'},
+            'z_particle': {'minimum': 0, 'maximum': 10, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' micron'},
+            'defocus': {'minimum': -5, 'maximum': 5, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' micron'},
+            'xy_position': {'minimum': -2, 'maximum': 2, 'singleStep': 0.1, 'decimals': 2, 'suffix': ' micron'},
+            'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm'},
+            'r_resolution': {'minimum': 10, 'maximum': 100, 'singleStep': 10}
         }
         
         # All parameters
-        self.magnification = QSpinBox(minimum=10, maximum=200, singleStep=10, suffix='x')
-        self.magnification.setValue(self.params.magnification)
-        self.magnification.valueChanged.connect(partial(self.set_parameter, self.params, "magnification"))
+        self.magnification = QSpinBox(**params_info['magnification'])
+        self.magnification.setValue(model.magnification)
+        self.magnification.valueChanged.connect(partial(self.changed_value, 'magnification'))
 
-        self.roi_size = QDoubleSpinBox(minimum=0.2, maximum=10, singleStep=0.4, suffix=" micron", decimals=1)
-        self.roi_size.setValue(self.params.roi_size)
-        self.roi_size.valueChanged.connect(partial(self.set_parameter, self.params, "roi_size"))
+        self.roi_size = QDoubleSpinBox(**params_info['roi_size'])
+        self.roi_size.setValue(model.roi_size*10**6)
+        self.roi_size.valueChanged.connect(partial(self.changed_value, 'roi_size'))
 
-        self.pxsize = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, suffix=" micron", decimals=2)
-        self.pxsize.setValue(self.params.pxsize)
-        self.pxsize.valueChanged.connect(partial(self.set_parameter, self.params, "pxsize"))
+        self.pxsize = QDoubleSpinBox(**params_info['roi_size'])
+        self.pxsize.setValue(model.pxsize*10**6)
+        self.pxsize.valueChanged.connect(partial(self.changed_value, 'pxsize'))
 
-        self.wavelen = QSpinBox(minimum=300, maximum=900, singleStep=50, suffix=" nm")
-        self.wavelen.setValue(self.params.wavelen)
-        self.wavelen.valueChanged.connect(partial(self.set_parameter, self.params, "wavelen"))
+        self.wavelen = QDoubleSpinBox(**params_info['wavelen'])
+        self.wavelen.setValue(model.wavelen*10**9)
+        self.wavelen.valueChanged.connect(partial(self.changed_value, 'wavelen'))
 
-        self.azimuth = QSpinBox(minimum=0, maximum=360, singleStep=10, suffix="°")
-        self.azimuth.setValue(self.params.azimuth)
-        self.azimuth.valueChanged.connect(partial(self.set_parameter, self.params, "azimuth"))
+        # Angles
+        self.azimuth = QSpinBox(**params_info['azimuth'])
+        self.azimuth.setValue(model.azimuth)
+        self.azimuth.valueChanged.connect(partial(self.changed_value, 'azimuth'))
     
-        self.inclination = QSpinBox(minimum=0, maximum=90, singleStep=10, suffix="°")
-        self.inclination.setValue(self.params.inclination)
-        self.inclination.valueChanged.connect(partial(self.set_parameter, self.params, "inclination"))
+        self.inclination = QSpinBox(**params_info['inclination'])
+        self.inclination.setValue(model.inclination)
+        self.inclination.valueChanged.connect(partial(self.changed_value, 'inclination'))
+
+        self.beam_angle = QSpinBox(**params_info['inclination'])
+        self.beam_angle.setValue(model.beam_angle)
+        self.beam_angle.valueChanged.connect(partial(self.changed_value, 'beam_angle'))
+
+        self.beam_azimuth = QSpinBox(**params_info['azimuth'])
+        self.beam_azimuth.setValue(model.beam_azimuth)
+        self.beam_azimuth.valueChanged.connect(partial(self.changed_value, 'beam_azimuth'))
+
+        self.polarization_azimuth = QSpinBox(**params_info['azimuth'])
+        self.polarization_azimuth.setValue(model.polarization_azimuth)
+        self.polarization_azimuth.valueChanged.connect(partial(self.changed_value, 'polarization_azimuth'))
 
         # Model
 
-        self.resolution = QSpinBox(minimum=10, maximum=200, singleStep=10)
-        self.resolution.setValue(self.rresolution)
-        self.resolution.valueChanged.connect(partial(self.set_parameter, self, "rresolution"))
+        self.resolution = QSpinBox(**params_info['r_resolution'])
+        self.resolution.setValue(model.r_resolution)
+        self.resolution.valueChanged.connect(partial(self.changed_value, 'r_resolution'))
 
-        self.unpolarized = QCheckBox()
-        self.unpolarized.setChecked(self.params.unpolarized)
-        self.unpolarized.stateChanged.connect(lambda: self.set_parameter(self.params, "unpolarized", self.unpolarized.isChecked()))
-        self.unpolarized.stateChanged.connect(self.update)
+        self.polarized = QCheckBox()
+        self.polarized.setChecked(model.polarized)
+        self.polarized.stateChanged.connect(partial(self.changed_value, 'polarized'))
+        self.polarized.stateChanged.connect(self.update_controls)
 
-        self.angular_toggle = QCheckBox()
-        self.angular_toggle.setChecked(self.angular)
-        self.angular_toggle.stateChanged.connect(lambda: self.set_parameter(self, "angular", self.angular_toggle.isChecked()))
-        self.angular_toggle.stateChanged.connect(self.update)
+        self.aberrations = QCheckBox()
+        self.aberrations.setChecked(model.aberrations)
+        self.aberrations.stateChanged.connect(partial(self.changed_value, 'aberrations'))
+        self.aberrations.stateChanged.connect(self.update_controls)
+
+        self.anisotropic = QCheckBox()
+        self.anisotropic.setChecked(model.anisotropic)
+        self.anisotropic.stateChanged.connect(partial(self.changed_value, 'anisotropic'))
+        self.anisotropic.stateChanged.connect(self.update_controls)
 
         self.multipolar_toggle = QCheckBox()
-        self.multipolar_toggle.setChecked(self.multipolar)
-        self.multipolar_toggle.stateChanged.connect(lambda: self.set_parameter(self, "multipolar", self.multipolar_toggle.isChecked()))
-        self.multipolar_toggle.stateChanged.connect(self.update)
+        self.multipolar_toggle.setChecked(model.multipolar)
+        self.multipolar_toggle.stateChanged.connect(partial(self.changed_value, 'multipolar'))
 
 
 
         # Layers
 
-        self.n_oil = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
-        self.n_oil.setValue(self.params.n_oil0)
-        self.n_oil.valueChanged.connect(partial(self.set_parameter, self.params, "n_oil"))
+        self.n_oil = QDoubleSpinBox(**params_info['RI'])
+        self.n_oil.setValue(model.n_oil)
+        self.n_oil.valueChanged.connect(partial(self.changed_value, 'n_oil'))
 
-        self.n_oil0 = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
-        self.n_oil0.setValue(self.params.n_oil0)
-        self.n_oil0.valueChanged.connect(partial(self.set_parameter, self.params, "n_oil0"))
+        self.n_oil0 = QDoubleSpinBox(**params_info['RI'])
+        self.n_oil0.setValue(model.n_oil)
+        self.n_oil0.valueChanged.connect(partial(self.changed_value, 'n_oil0'))
 
-        self.n_glass = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
-        self.n_glass.setValue(self.params.n_glass0)
-        self.n_glass.valueChanged.connect(partial(self.set_parameter, self.params, "n_glass"))
+        self.n_glass = QDoubleSpinBox(**params_info['RI'])
+        self.n_glass.setValue(model.n_glass)
+        self.n_glass.valueChanged.connect(partial(self.changed_value, 'n_glass'))
 
-        self.n_glass0 = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
-        self.n_glass0.setValue(self.params.n_glass0)
-        self.n_glass0.valueChanged.connect(partial(self.set_parameter, self.params, "n_glass0"))
+        self.n_glass0 = QDoubleSpinBox(**params_info['RI'])
+        self.n_glass0.setValue(model.n_glass)
+        self.n_glass0.valueChanged.connect(partial(self.changed_value, 'n_glass0'))
 
-        self.t_oil = QDoubleSpinBox(minimum=1, maximum=1000, singleStep=1, suffix=" micron", decimals=0)
-        self.t_oil.setValue(self.params.t_oil)
-        self.t_oil.valueChanged.connect(partial(self.set_parameter, self.params, "t_oil"))
+        self.t_oil0 = QDoubleSpinBox(**params_info['thickness'])
+        self.t_oil0.setValue(model.t_oil*10**6)
+        self.t_oil0.valueChanged.connect(partial(self.changed_value, 't_oil0'))
 
-        self.t_oil0 = QDoubleSpinBox(minimum=1, maximum=1000, singleStep=1, suffix=" micron", decimals=0)
-        self.t_oil0.setValue(self.params.t_oil0)
-        self.t_oil0.valueChanged.connect(partial(self.set_parameter, self.params, "t_oil0"))
+        self.t_glass = QDoubleSpinBox(**params_info['thickness'])
+        self.t_glass.setValue(model.t_glass*10**6)
+        self.t_glass.valueChanged.connect(partial(self.changed_value, 't_glass'))
 
-        self.t_glass = QDoubleSpinBox(minimum=1, maximum=1000, singleStep=1, suffix=" micron", decimals=0)
-        self.t_glass.setValue(self.params.t_glass)
-        self.t_glass.valueChanged.connect(partial(self.set_parameter, self.params, "t_glass"))
+        self.t_glass0 = QDoubleSpinBox(**params_info['thickness'])
+        self.t_glass0.setValue(model.t_glass*10**6)
+        self.t_glass0.valueChanged.connect(partial(self.changed_value, 't_glass0'))
 
-        self.t_glass0 = QDoubleSpinBox(minimum=1, maximum=1000, singleStep=1, suffix=" micron", decimals=0)
-        self.t_glass0.setValue(self.params.t_glass0)
-        self.t_glass0.valueChanged.connect(partial(self.set_parameter, self.params, "t_glass0"))
+        self.x0 = QDoubleSpinBox(**params_info['xy_position'])
+        self.x0.setValue(model.x0)
+        self.x0.valueChanged.connect(partial(self.changed_value, 'x0'))
 
-        self.x0 = QDoubleSpinBox(minimum=-2, maximum=2, singleStep=0.1, decimals=2, suffix=" micron")
-        self.x0.setValue(self.params.x0)
-        self.x0.valueChanged.connect(partial(self.set_parameter, self.params, "x0"))
+        self.y0 = QDoubleSpinBox(**params_info['xy_position'])
+        self.y0.setValue(model.y0)
+        self.y0.valueChanged.connect(partial(self.changed_value, 'y0'))
 
-        self.y0 = QDoubleSpinBox(minimum=-2, maximum=2, singleStep=0.1, decimals=2, suffix=" micron")
-        self.y0.setValue(self.params.y0)
-        self.y0.valueChanged.connect(partial(self.set_parameter, self.params, "y0"))
+        self.z_particle = QDoubleSpinBox(**params_info['z_particle'])
+        self.z_particle.setValue(model.z_p)
+        self.z_particle.valueChanged.connect(partial(self.changed_value, 'z_p'))
 
-        self.z_particle = QDoubleSpinBox(minimum=0, maximum=10, singleStep=0.01, decimals=2, suffix=" micron")
-        self.z_particle.setValue(self.params.z_p)
-        self.z_particle.valueChanged.connect(partial(self.set_parameter, self.params, "z_p"))
-
-        self.z_focus = QDoubleSpinBox(minimum=-5, maximum=15, singleStep=0.01, decimals=2, suffix=" micron")
-        self.z_focus.setValue(self.params.z_focus)
-        self.z_focus.valueChanged.connect(partial(self.set_parameter, self.params, "z_focus"))
+        self.defocus = QDoubleSpinBox(**params_info['defocus'])
+        self.defocus.setValue(model.defocus)
+        self.defocus.valueChanged.connect(partial(self.changed_value, 'defocus'))
         
         self.n_scat = QComboBox()
-        self.n_scat.addItems(DesignParams.scat_materials)
-        self.n_scat.setCurrentText(self.params.scat_mat)
-        self.n_scat.currentTextChanged.connect(partial(self.set_parameter, self.params, "scat_mat"))
-        self.n_scat.currentTextChanged.connect(self.update)
+        self.n_scat.addItems(('gold', 'polystyrene'))
+        self.n_scat.setCurrentText(model.scat_mat)
+        self.n_scat.currentTextChanged.connect(partial(self.changed_value, 'scat_mat'))
 
-        self.n_medium = QDoubleSpinBox(minimum=1, maximum=10, singleStep=0.1, decimals=4)
-        self.n_medium.setValue(self.params.n_medium)
-        self.n_medium.valueChanged.connect(partial(self.set_parameter, self.params, "n_medium"))
+        self.n_medium = QDoubleSpinBox(**params_info['RI'])
+        self.n_medium.setValue(model.n_medium)
+        self.n_medium.valueChanged.connect(partial(self.changed_value, 'n_medium'))
 
-        self.diameter = QSpinBox(minimum=1, maximum=100, singleStep=10, suffix=" nm")
-        self.diameter.setValue(self.params.diameter)
-        self.diameter.valueChanged.connect(partial(self.set_parameter, self.params, "diameter"))
-
-        for param in [self.magnification, self.roi_size, self.pxsize, self.pxsize, self.wavelen, self.azimuth, self.inclination, self.resolution, self.n_oil, self.n_oil0, self.n_glass, self.n_glass0, self.t_oil, self.t_oil0, self.t_glass, self.t_glass0, self.x0, self.z_particle, self.z_focus, self.n_medium, self.diameter]:
-            param.editingFinished.connect(self.update)
-
+        self.diameter = QDoubleSpinBox(**params_info['diameter'])
+        self.diameter.setValue(model.diameter*10**9)
+        self.diameter.valueChanged.connect(partial(self.changed_value, 'diameter'))
 
         # Animation
         
         self.misc = QComboBox()
-        sweepable_params = [k.lstrip("_") for k, v in self.params.to_dict().items() if type(v) in (int, float)]
+        sweepable_params = ('defocus', 'z_p', 'wavelen', 'n_medium', 'diameter')
         self.misc.addItems(sweepable_params)
-        self.misc.setCurrentText("wavelen")
+        self.misc.setCurrentText('wavelen')
 
         self.start = QDoubleSpinBox(minimum=-10, maximum=1000)
         self.start.setValue(500)
@@ -183,81 +188,90 @@ class ParameterWindow(QDockWidget):
         self.num = QSpinBox(minimum=1, maximum=200, value=10)
         self.fps = QSpinBox(minimum=1, maximum=200, value=10)
         self.fps.valueChanged.connect(self.fps_changed.emit)
-        self.start_sweep = QPushButton("Start sweep")
+        self.start_sweep = QPushButton('Start sweep')
         self.start_sweep.clicked.connect(self.sweep)
         
         
 
         # Group into groups and tabs
 
-        self.setup_group = QGroupBox("Setup")
+        self.setup_group = QGroupBox('Setup')
         setup_layout = QFormLayout()
-        setup_layout.addRow("Magnification", self.magnification)
-        setup_layout.addRow("ROI Size", self.roi_size)
-        setup_layout.addRow("Pixel Size", self.pxsize)
-        setup_layout.addRow("Wavelength", self.wavelen)
+        setup_layout.addRow('Magnification', self.magnification)
+        setup_layout.addRow('ROI Size', self.roi_size)
+        setup_layout.addRow('Pixel Size', self.pxsize)
+        setup_layout.addRow('Wavelength', self.wavelen)
         self.setup_group.setLayout(setup_layout)
 
-        self.orientation_group = QGroupBox("Orientation")
+        self.orientation_group = QGroupBox('Orientation')
         orientation_layout = QFormLayout()
-        orientation_layout.addRow("Azimuth", self.azimuth)
-        orientation_layout.addRow("Inclination", self.inclination)
-        orientation_layout.addRow("Unpolarized", self.unpolarized)
+        orientation_layout.addWidget(QLabel('Scatterer'))
+        orientation_layout.addRow('anisotropic', self.anisotropic)
+        orientation_layout.addRow('Azimuth', self.azimuth)
+        orientation_layout.addRow('Inclination', self.inclination)
+        orientation_layout.addWidget(QLabel('Excitation & Reference'))
+        orientation_layout.addRow('Polarized', self.polarized)
+        orientation_layout.addRow('Polarization', self.polarization_azimuth)
+        orientation_layout.addRow('Angle of Incidence', self.beam_angle)
+        orientation_layout.addRow('Azimuth of Incidence', self.beam_azimuth)
         self.orientation_group.setLayout(orientation_layout)
 
-        self.model_group = QGroupBox("Model")
+        self.model_group = QGroupBox('Model')
         model_layout = QFormLayout()
-        model_layout.addRow("Radial Resolution", self.resolution)
-        model_layout.addRow("Multipolar", self.multipolar_toggle)
-        model_layout.addRow("Angular", self.angular_toggle)
+        model_layout.addRow('Radial Resolution', self.resolution)
+        model_layout.addRow('Multipolar', self.multipolar_toggle)
         self.model_group.setLayout(model_layout)
 
-        self.layers_group = QGroupBox("Layers")
+        self.layers_group = QGroupBox('Layers')
+        layers_group_layout = QVBoxLayout()
+        check_layout = QFormLayout()
+        check_layout.addRow('Abberations', self.aberrations)
         layers_layout = QGridLayout()
         layers_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        layers_layout.addWidget(QLabel("Parameter"),0,0)
-        layers_layout.addWidget(QLabel("n_oil"),1,0)
-        layers_layout.addWidget(QLabel("n_glass"),2,0)
-        layers_layout.addWidget(QLabel("t_oil"),3,0)
-        layers_layout.addWidget(QLabel("t_glass"),4,0)
+        layers_layout.addWidget(QLabel('Parameter'),0,0)
+        layers_layout.addWidget(QLabel('n_oil'),1,0)
+        layers_layout.addWidget(QLabel('n_glass'),2,0)
+        layers_layout.addWidget(QLabel('t_oil'),3,0)
+        layers_layout.addWidget(QLabel('t_glass'),4,0)
 
-        layers_layout.addWidget(QLabel("Design"),0,1)
+        layers_layout.addWidget(QLabel('Design'),0,1)
         layers_layout.addWidget(self.n_oil0, 1, 1)
         layers_layout.addWidget(self.n_glass0, 2, 1)
         layers_layout.addWidget(self.t_oil0, 3, 1)
         layers_layout.addWidget(self.t_glass0, 4, 1)
 
-        layers_layout.addWidget(QLabel("Real"),0,2)
+        layers_layout.addWidget(QLabel('Real'),0,2)
         layers_layout.addWidget(self.n_oil, 1, 2)
         layers_layout.addWidget(self.n_glass, 2, 2)
-        layers_layout.addWidget(self.t_oil, 3, 2)
         layers_layout.addWidget(self.t_glass, 4, 2)
 
-        self.layers_group.setLayout(layers_layout)
+        layers_group_layout.addLayout(check_layout)
+        layers_group_layout.addLayout(layers_layout)
+        self.layers_group.setLayout(layers_group_layout)
 
-        self.variable_group = QGroupBox("Variables")
+        self.variable_group = QGroupBox('Variables')
         variable_layout = QFormLayout()
-        variable_layout.addRow("Particle Position (x)", self.x0)
-        variable_layout.addRow("Particle Position (y)", self.y0)
-        variable_layout.addRow("Particle Position (z)", self.z_particle)
-        variable_layout.addRow("Focal Position", self.z_focus)
-        variable_layout.addRow("n_medium", self.n_medium)
-        variable_layout.addRow("n_scatterer", self.n_scat)
-        variable_layout.addRow("diameter", self.diameter)
+        variable_layout.addRow('Particle Position (x)', self.x0)
+        variable_layout.addRow('Particle Position (y)', self.y0)
+        variable_layout.addRow('Particle Position (z)', self.z_particle)
+        variable_layout.addRow('Defocus', self.defocus)
+        variable_layout.addRow('n_medium', self.n_medium)
+        variable_layout.addRow('n_scatterer', self.n_scat)
+        variable_layout.addRow('diameter', self.diameter)
         self.variable_group.setLayout(variable_layout)
 
         animtab_layout = QFormLayout()
-        animtab_layout.addRow("Parameter", self.misc)
-        animtab_layout.addRow("Start", self.start)
-        animtab_layout.addRow("Stop", self.stop)
-        animtab_layout.addRow("Number", self.num)
-        animtab_layout.addRow("fps", self.fps)
+        animtab_layout.addRow('Parameter', self.misc)
+        animtab_layout.addRow('Start', self.start)
+        animtab_layout.addRow('Stop', self.stop)
+        animtab_layout.addRow('Number', self.num)
+        animtab_layout.addRow('fps', self.fps)
         animtab_layout.addWidget(self.start_sweep)
 
 
         # Setup tab
         self.setup_tab = QWidget(self)
-        self.tabwidget.addTab(self.setup_tab, "Setup")
+        self.tabwidget.addTab(self.setup_tab, 'Setup')
         setuptab_layout = QVBoxLayout()
         setuptab_layout.addWidget(self.setup_group)
         setuptab_layout.addWidget(self.orientation_group)
@@ -267,7 +281,7 @@ class ParameterWindow(QDockWidget):
         self.setup_tab.setLayout(setuptab_layout)
 
         self.aberration_tab = QWidget(self)
-        self.tabwidget.addTab(self.aberration_tab, "Aberration")
+        self.tabwidget.addTab(self.aberration_tab, 'Aberration')
         aberrationtab_layout = QVBoxLayout()
         aberrationtab_layout.addWidget(self.layers_group)
         aberrationtab_layout.addWidget(self.variable_group)
@@ -276,26 +290,31 @@ class ParameterWindow(QDockWidget):
 
         # Sweep animation tab
         self.anim_tab = QWidget(self)
-        self.tabwidget.addTab(self.anim_tab, "Animation")
+        self.tabwidget.addTab(self.anim_tab, 'Animation')
 
         self.anim_tab.setLayout(animtab_layout)
-    
-    def update(self):
-        if self.changed:
-            self.update_psf.emit(self.params)
-            self.changed = False
-    
-    def set_parameter(self, obj, name, value):
-        setattr(obj, name, value)
-        self.changed = True
+
         self.update_controls()
 
     
+    def changed_value(self, name, value):
+        self.params[name] = value
+        self.update_controls()
+        self.update_psf.emit(self.params)
+
     def update_controls(self):
-        self.angular_toggle.setEnabled(self.multipolar)
+        self.azimuth.setEnabled(self.anisotropic.isChecked())
+        self.inclination.setEnabled(self.anisotropic.isChecked())
+        self.polarization_azimuth.setEnabled(self.polarized.isChecked())
+
+        checked = self.aberrations.isChecked()
+        for param in [self.n_glass, self.n_glass0, self.n_oil, self.n_oil0, self.t_oil0, self.t_glass, self.t_glass0]:
+            param.setEnabled(checked)
         
     
     def sweep(self):
         param = np.linspace(self.start.value(), self.stop.value(), self.num.value())
         param_name = self.misc.currentText()
-        self.sweep_params.emit(self.params, param_name, param)
+        params = self.params.copy()
+        params[param_name] = param
+        self.sweep_params.emit(params)
