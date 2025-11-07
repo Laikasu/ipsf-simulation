@@ -45,8 +45,13 @@ class ParameterWindow(QDockWidget):
             'defocus': {'minimum': -5, 'maximum': 5, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' micron'},
             'xy_position': {'minimum': -2, 'maximum': 2, 'singleStep': 0.1, 'decimals': 2, 'suffix': ' micron'},
             'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm'},
-            'r_resolution': {'minimum': 10, 'maximum': 100, 'singleStep': 10}
+            'r_resolution': {'minimum': 10, 'maximum': 100, 'singleStep': 10},
+            'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1}
         }
+
+        self.efficiency = QDoubleSpinBox(**params_info['efficiency'])
+        self.efficiency.setValue(model.defaults['efficiency'])
+        self.efficiency.valueChanged.connect(partial(self.changed_value, 'efficiency'))
         
         # All parameters
         self.magnification = QSpinBox(**params_info['magnification'])
@@ -219,6 +224,7 @@ class ParameterWindow(QDockWidget):
         self.model_group = QGroupBox('Model')
         model_layout = QFormLayout()
         model_layout.addRow('Radial Resolution', self.resolution)
+        model_layout.addRow('Efficiency', self.efficiency)
         model_layout.addRow('Multipolar', self.multipolar_toggle)
         self.model_group.setLayout(model_layout)
 
