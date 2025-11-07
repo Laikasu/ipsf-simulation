@@ -76,6 +76,7 @@ class MplPlot(FigureCanvasQTAgg):
     def __init__(self, parent=None, width=5, height=10, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
+        self.axes.grid(True)
         fig.tight_layout(pad=4)
         super().__init__(fig)
         
@@ -117,9 +118,11 @@ class MplPlot(FigureCanvasQTAgg):
         if self.show_derivatives:
             self.axes.cla()
             self.axes_deriv = self.figure.add_subplot(122)
-            self.axes_deriv.set_title('Derivative of intensity')
+            self.axes_deriv.grid(True)
+            self.axes_deriv.set_title('Derivative of Contrast')
             self.axes = self.figure.add_subplot(121)
-            self.axes.set_title('Intensity')
+            self.axes.grid(True)
+            self.axes.set_title('Contrast')
             self.plot_scat, = self.axes.plot(self.param, self.contrast['scattering'], label='scattering')
             self.plot_if, = self.axes.plot(self.param, self.contrast['interference'], label='interference')
             self.plot_sig, = self.axes.plot(self.param, self.contrast['signal'], label='signal')
@@ -133,7 +136,8 @@ class MplPlot(FigureCanvasQTAgg):
         else:
             self.axes.cla()
             self.axes = self.figure.add_subplot(111)
-            self.axes.set_title('Intensity')
+            self.axes.grid(True)
+            self.axes.set_title('Contrast')
             self.plot_scat_deriv = None
             self.plot_if_deriv = None
             self.plot_sig_deriv = None
