@@ -38,7 +38,7 @@ class ParameterWindow(QDockWidget):
             'pxsize': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'suffix': ' micron', 'decimals': 2},
             'wavelen': {'minimum': 300, 'maximum': 900, 'singleStep': 50, 'suffix': ' nm'},
             'azimuth': {'minimum': 0, 'maximum': 360, 'singleStep': 10, 'suffix': '°'},
-            'inclination': {'minimum': 0, 'maximum': 90, 'singleStep': 2, 'suffix': '°'},
+            'inclination': {'minimum': 0, 'maximum': 90, 'singleStep': 10, 'suffix': '°'},
             'RI': {'minimum': 1, 'maximum': 10, 'singleStep': 0.01, 'decimals': 4},
             'thickness': {'minimum': 1, 'maximum': 1000, 'singleStep':1, 'decimals': 0, 'suffix': ' micron'},
             'z_particle': {'minimum': 0, 'maximum': 10, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' micron'},
@@ -46,12 +46,17 @@ class ParameterWindow(QDockWidget):
             'xy_position': {'minimum': -2, 'maximum': 2, 'singleStep': 0.1, 'decimals': 2, 'suffix': ' micron'},
             'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm'},
             'r_resolution': {'minimum': 10, 'maximum': 100, 'singleStep': 10},
-            'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1}
+            'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1},
+            'aspect_ratio': {'minimum': 1, 'maximum': 10, 'singleStep': 1, 'decimals': 2},
         }
 
         self.efficiency = QDoubleSpinBox(**params_info['efficiency'])
         self.efficiency.setValue(model.defaults['efficiency'])
         self.efficiency.valueChanged.connect(partial(self.changed_value, 'efficiency'))
+
+        self.aspect_ratio = QDoubleSpinBox(**params_info['aspect_ratio'])
+        self.aspect_ratio.setValue(model.defaults['aspect_ratio'])
+        self.aspect_ratio.valueChanged.connect(partial(self.changed_value, 'aspect_ratio'))
         
         # All parameters
         self.magnification = QSpinBox(**params_info['magnification'])
@@ -79,17 +84,9 @@ class ParameterWindow(QDockWidget):
         self.inclination.setValue(model.defaults['inclination'])
         self.inclination.valueChanged.connect(partial(self.changed_value, 'inclination'))
 
-        self.beam_angle = QSpinBox(**params_info['inclination'])
-        self.beam_angle.setValue(model.defaults['beam_angle'])
-        self.beam_angle.valueChanged.connect(partial(self.changed_value, 'beam_angle'))
-
-        self.beam_azimuth = QSpinBox(**params_info['azimuth'])
-        self.beam_azimuth.setValue(model.defaults['beam_azimuth'])
-        self.beam_azimuth.valueChanged.connect(partial(self.changed_value, 'beam_azimuth'))
-
-        self.polarization_azimuth = QSpinBox(**params_info['azimuth'])
-        self.polarization_azimuth.setValue(model.defaults['polarization_azimuth'])
-        self.polarization_azimuth.valueChanged.connect(partial(self.changed_value, 'polarization_azimuth'))
+        self.polarization_angle = QSpinBox(**params_info['azimuth'])
+        self.polarization_angle.setValue(model.defaults['polarization_angle'])
+        self.polarization_angle.valueChanged.connect(partial(self.changed_value, 'polarization_angle'))
 
         # Model
 
@@ -165,9 +162,13 @@ class ParameterWindow(QDockWidget):
         self.defocus.valueChanged.connect(partial(self.changed_value, 'defocus'))
         
         self.n_scat = QComboBox()
-        self.n_scat.addItems(('gold', 'polystyrene'))
+        self.n_scat.addItems(('gold', 'polystyrene', 'custom'))
         self.n_scat.setCurrentText(model.defaults['scat_mat'])
         self.n_scat.currentTextChanged.connect(partial(self.changed_value, 'scat_mat'))
+
+        self.n_custom = QDoubleSpinBox(**params_info['RI'])
+        self.n_custom.setValue(model.defaults['n_custom'])
+        self.n_custom.valueChanged.connect(partial(self.changed_value, 'n_custom'))
 
         self.n_medium = QDoubleSpinBox(**params_info['RI'])
         self.n_medium.setValue(model.defaults['n_medium'])
@@ -190,8 +191,8 @@ class ParameterWindow(QDockWidget):
         self.stop.setValue(600)
         #self.start.valueChanged.connect(lambda value: self.stop.setValue(max(value, self.stop.value())))
         #self.stop.valueChanged.connect(lambda value: self.start.setValue(min(value, self.start.value())))
-        self.num = QSpinBox(minimum=1, maximum=200, value=10)
-        self.fps = QSpinBox(minimum=1, maximum=200, value=10)
+        self.num = QSpinBox(minimum=1, maximum=200, value=10, singleStep=10)
+        self.fps = QSpinBox(minimum=1, maximum=200, value=10, singleStep=10)
         self.fps.valueChanged.connect(self.fps_changed.emit)
         self.start_sweep = QPushButton('Start sweep')
         self.start_sweep.clicked.connect(self.sweep)
@@ -205,20 +206,18 @@ class ParameterWindow(QDockWidget):
         setup_layout.addRow('Magnification', self.magnification)
         setup_layout.addRow('ROI Size', self.roi_size)
         setup_layout.addRow('Pixel Size', self.pxsize)
-        setup_layout.addRow('Wavelength', self.wavelen)
         self.setup_group.setLayout(setup_layout)
 
-        self.orientation_group = QGroupBox('Orientation')
+        self.orientation_group = QGroupBox('Orientation and Polarization')
         orientation_layout = QFormLayout()
         orientation_layout.addWidget(QLabel('Scatterer'))
         orientation_layout.addRow('anisotropic', self.anisotropic)
+        orientation_layout.addRow('aspect ratio', self.aspect_ratio)
         orientation_layout.addRow('Azimuth', self.azimuth)
         orientation_layout.addRow('Inclination', self.inclination)
-        orientation_layout.addWidget(QLabel('Excitation & Reference'))
+        orientation_layout.addWidget(QLabel('Excitation'))
         orientation_layout.addRow('Polarized', self.polarized)
-        orientation_layout.addRow('Polarization', self.polarization_azimuth)
-        orientation_layout.addRow('Angle of Incidence', self.beam_angle)
-        orientation_layout.addRow('Azimuth of Incidence', self.beam_azimuth)
+        orientation_layout.addRow('Polarization', self.polarization_angle)
         self.orientation_group.setLayout(orientation_layout)
 
         self.model_group = QGroupBox('Model')
@@ -255,16 +254,24 @@ class ParameterWindow(QDockWidget):
         layers_group_layout.addLayout(layers_layout)
         self.layers_group.setLayout(layers_group_layout)
 
+
         self.variable_group = QGroupBox('Variables')
         variable_layout = QFormLayout()
-        variable_layout.addRow('Particle Position (x)', self.x0)
-        variable_layout.addRow('Particle Position (y)', self.y0)
-        variable_layout.addRow('Particle Position (z)', self.z_particle)
+        variable_layout.addRow('Wavelength', self.wavelen)
         variable_layout.addRow('Defocus', self.defocus)
-        variable_layout.addRow('n_medium', self.n_medium)
-        variable_layout.addRow('n_scatterer', self.n_scat)
-        variable_layout.addRow('diameter', self.diameter)
         self.variable_group.setLayout(variable_layout)
+
+
+        self.particle_group = QGroupBox('Scatterer')
+        particle_layout = QFormLayout()
+        particle_layout.addRow('X Position', self.x0)
+        particle_layout.addRow('Y Position', self.y0)
+        particle_layout.addRow('Z Position', self.z_particle)
+        particle_layout.addRow('n_scatterer', self.n_scat)
+        particle_layout.addRow('custom RI', self.n_custom)
+        particle_layout.addRow('diameter', self.diameter)
+        self.particle_group.setLayout(particle_layout)
+
 
         animtab_layout = QFormLayout()
         animtab_layout.addRow('Parameter', self.misc)
@@ -280,6 +287,8 @@ class ParameterWindow(QDockWidget):
         self.tabwidget.addTab(self.setup_tab, 'Setup')
         setuptab_layout = QVBoxLayout()
         setuptab_layout.addWidget(self.setup_group)
+        setuptab_layout.addWidget(self.variable_group)
+        setuptab_layout.addWidget(self.particle_group)
         setuptab_layout.addWidget(self.orientation_group)
         setuptab_layout.addWidget(self.model_group)
         setuptab_layout.addStretch(1)
@@ -290,13 +299,13 @@ class ParameterWindow(QDockWidget):
         self.tabwidget.addTab(self.aberration_tab, 'Aberration')
         aberrationtab_layout = QVBoxLayout()
         aberrationtab_layout.addWidget(self.layers_group)
-        aberrationtab_layout.addWidget(self.variable_group)
+        
         aberrationtab_layout.addStretch(1)
         self.aberration_tab.setLayout(aberrationtab_layout)
 
         # Sweep animation tab
         self.anim_tab = QWidget(self)
-        self.tabwidget.addTab(self.anim_tab, 'Animation')
+        self.tabwidget.addTab(self.anim_tab, 'Sweep')
 
         self.anim_tab.setLayout(animtab_layout)
 
@@ -311,7 +320,16 @@ class ParameterWindow(QDockWidget):
     def update_controls(self):
         self.azimuth.setEnabled(self.anisotropic.isChecked())
         self.inclination.setEnabled(self.anisotropic.isChecked())
-        self.polarization_azimuth.setEnabled(self.polarized.isChecked())
+        self.multipolar_toggle.setEnabled(not self.anisotropic.isChecked())
+        self.aspect_ratio.setEnabled(self.anisotropic.isChecked())
+
+
+        self.polarization_angle.setEnabled(self.polarized.isChecked())
+
+
+        print()
+        self.n_custom.setEnabled(self.n_scat.currentText() == 'custom')
+
 
         checked = self.aberrations.isChecked()
         for param in [self.n_glass, self.n_glass0, self.n_oil, self.n_oil0, self.t_oil0, self.t_glass, self.t_glass0]:
