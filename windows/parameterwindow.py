@@ -47,7 +47,7 @@ class ParameterWindow(QDockWidget):
             'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm'},
             'r_resolution': {'minimum': 10, 'maximum': 100, 'singleStep': 10},
             'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1},
-            'aspect_ratio': {'minimum': 1, 'maximum': 10, 'singleStep': 1, 'decimals': 2},
+            'aspect_ratio': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 2},
         }
 
         self.efficiency = QDoubleSpinBox(**params_info['efficiency'])
@@ -187,13 +187,16 @@ class ParameterWindow(QDockWidget):
 
         self.start = QDoubleSpinBox(minimum=-10, maximum=1000)
         self.start.setValue(500)
+
         self.stop = QDoubleSpinBox(minimum=-10, maximum=1000)
         self.stop.setValue(600)
-        #self.start.valueChanged.connect(lambda value: self.stop.setValue(max(value, self.stop.value())))
-        #self.stop.valueChanged.connect(lambda value: self.start.setValue(min(value, self.start.value())))
         self.num = QSpinBox(minimum=1, maximum=200, value=10, singleStep=10)
+
         self.fps = QSpinBox(minimum=1, maximum=200, value=10, singleStep=10)
         self.fps.valueChanged.connect(self.fps_changed.emit)
+
+        self.live_mode = QCheckBox('Live Mode')
+
         self.start_sweep = QPushButton('Start sweep')
         self.start_sweep.clicked.connect(self.sweep)
         
@@ -279,6 +282,7 @@ class ParameterWindow(QDockWidget):
         animtab_layout.addRow('Stop', self.stop)
         animtab_layout.addRow('Number', self.num)
         animtab_layout.addRow('fps', self.fps)
+        animtab_layout.addRow('Live mode', self.live_mode)
         animtab_layout.addWidget(self.start_sweep)
 
 
@@ -315,7 +319,10 @@ class ParameterWindow(QDockWidget):
     def changed_value(self, name, value):
         self.params[name] = value
         self.update_controls()
-        self.update_psf.emit(self.params)
+        if self.live_mode.isChecked():
+            self.sweep()
+        else:
+            self.update_psf.emit(self.params)
 
     def update_controls(self):
         self.azimuth.setEnabled(self.anisotropic.isChecked())
@@ -325,9 +332,6 @@ class ParameterWindow(QDockWidget):
 
 
         self.polarization_angle.setEnabled(self.polarized.isChecked())
-
-
-        print()
         self.n_custom.setEnabled(self.n_scat.currentText() == 'custom')
 
 
