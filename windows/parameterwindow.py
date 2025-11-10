@@ -104,11 +104,6 @@ class ParameterWindow(QDockWidget):
         self.aberrations.stateChanged.connect(partial(self.changed_value, 'aberrations'))
         self.aberrations.stateChanged.connect(self.update_controls)
 
-        self.anisotropic = QCheckBox()
-        self.anisotropic.setChecked(model.defaults['anisotropic'])
-        self.anisotropic.stateChanged.connect(partial(self.changed_value, 'anisotropic'))
-        self.anisotropic.stateChanged.connect(self.update_controls)
-
         self.multipolar_toggle = QCheckBox()
         self.multipolar_toggle.setChecked(model.defaults['multipolar'])
         self.multipolar_toggle.stateChanged.connect(partial(self.changed_value, 'multipolar'))
@@ -190,7 +185,7 @@ class ParameterWindow(QDockWidget):
 
         self.stop = QDoubleSpinBox(minimum=-10, maximum=1000)
         self.stop.setValue(600)
-        self.num = QSpinBox(minimum=1, maximum=200, value=10, singleStep=10)
+        self.num = QSpinBox(minimum=1, maximum=200, value=20, singleStep=10)
 
         self.fps = QSpinBox(minimum=1, maximum=200, value=10, singleStep=10)
         self.fps.valueChanged.connect(self.fps_changed.emit)
@@ -214,7 +209,7 @@ class ParameterWindow(QDockWidget):
         self.orientation_group = QGroupBox('Orientation and Polarization')
         orientation_layout = QFormLayout()
         orientation_layout.addWidget(QLabel('Scatterer'))
-        orientation_layout.addRow('anisotropic', self.anisotropic)
+        orientation_layout.addRow('Multipolar', self.multipolar_toggle)
         orientation_layout.addRow('aspect ratio', self.aspect_ratio)
         orientation_layout.addRow('Azimuth', self.azimuth)
         #orientation_layout.addRow('Inclination', self.inclination)
@@ -227,7 +222,6 @@ class ParameterWindow(QDockWidget):
         model_layout = QFormLayout()
         model_layout.addRow('Radial Resolution', self.resolution)
         model_layout.addRow('Efficiency', self.efficiency)
-        model_layout.addRow('Multipolar', self.multipolar_toggle)
         self.model_group.setLayout(model_layout)
 
         self.layers_group = QGroupBox('Layers')
@@ -265,13 +259,14 @@ class ParameterWindow(QDockWidget):
         self.variable_group.setLayout(variable_layout)
 
 
-        self.particle_group = QGroupBox('Scatterer')
+        self.particle_group = QGroupBox('Scattering')
         particle_layout = QFormLayout()
         particle_layout.addRow('X Position', self.x0)
         particle_layout.addRow('Y Position', self.y0)
         particle_layout.addRow('Z Position', self.z_particle)
-        particle_layout.addRow('n_scatterer', self.n_scat)
+        particle_layout.addRow('n_scat', self.n_scat)
         particle_layout.addRow('custom RI', self.n_custom)
+        particle_layout.addRow('n_medium', self.n_medium)
         particle_layout.addRow('diameter', self.diameter)
         self.particle_group.setLayout(particle_layout)
 
@@ -286,14 +281,25 @@ class ParameterWindow(QDockWidget):
         animtab_layout.addWidget(self.start_sweep)
 
 
+        # Particle tab
+        self.scatterer_tab = QWidget(self)
+        self.tabwidget.addTab(self.scatterer_tab, 'Scattering')
+        scatterertab_layout = QVBoxLayout()
+        scatterertab_layout.addWidget(self.particle_group)
+        scatterertab_layout.addWidget(self.orientation_group)
+        scatterertab_layout.addWidget(self.model_group)
+        scatterertab_layout.addStretch(1)
+
+        self.scatterer_tab.setLayout(scatterertab_layout)
+
         # Setup tab
         self.setup_tab = QWidget(self)
         self.tabwidget.addTab(self.setup_tab, 'Setup')
         setuptab_layout = QVBoxLayout()
         setuptab_layout.addWidget(self.setup_group)
-        setuptab_layout.addWidget(self.variable_group)
-        setuptab_layout.addWidget(self.particle_group)
-        setuptab_layout.addWidget(self.orientation_group)
+        #setuptab_layout.addWidget(self.variable_group)
+        #setuptab_layout.addWidget(self.particle_group)
+        #setuptab_layout.addWidget(self.orientation_group)
         setuptab_layout.addWidget(self.model_group)
         setuptab_layout.addStretch(1)
 
@@ -325,8 +331,7 @@ class ParameterWindow(QDockWidget):
             self.update_psf.emit(self.params)
 
     def update_controls(self):
-        self.anisotropic.setEnabled(not self.multipolar_toggle.isChecked())
-        a = not self.multipolar_toggle.isChecked() and self.anisotropic.isChecked()
+        a = not self.multipolar_toggle.isChecked()
         self.azimuth.setEnabled(a)
         self.inclination.setEnabled(a)
         self.aspect_ratio.setEnabled(a)
