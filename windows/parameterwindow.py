@@ -217,7 +217,7 @@ class ParameterWindow(QDockWidget):
         orientation_layout.addRow('anisotropic', self.anisotropic)
         orientation_layout.addRow('aspect ratio', self.aspect_ratio)
         orientation_layout.addRow('Azimuth', self.azimuth)
-        orientation_layout.addRow('Inclination', self.inclination)
+        #orientation_layout.addRow('Inclination', self.inclination)
         orientation_layout.addWidget(QLabel('Excitation'))
         orientation_layout.addRow('Polarized', self.polarized)
         orientation_layout.addRow('Polarization', self.polarization_angle)
@@ -325,10 +325,11 @@ class ParameterWindow(QDockWidget):
             self.update_psf.emit(self.params)
 
     def update_controls(self):
-        self.azimuth.setEnabled(self.anisotropic.isChecked())
-        self.inclination.setEnabled(self.anisotropic.isChecked())
-        self.multipolar_toggle.setEnabled(not self.anisotropic.isChecked())
-        self.aspect_ratio.setEnabled(self.anisotropic.isChecked())
+        self.anisotropic.setEnabled(not self.multipolar_toggle.isChecked())
+        a = not self.multipolar_toggle.isChecked() and self.anisotropic.isChecked()
+        self.azimuth.setEnabled(a)
+        self.inclination.setEnabled(a)
+        self.aspect_ratio.setEnabled(a)
 
 
         self.polarization_angle.setEnabled(self.polarized.isChecked())
