@@ -251,16 +251,11 @@ class ParameterWindow(QDockWidget):
         layers_group_layout.addLayout(layers_layout)
         self.layers_group.setLayout(layers_group_layout)
 
-
-        self.variable_group = QGroupBox('Variables')
-        variable_layout = QFormLayout()
-        variable_layout.addRow('Wavelength', self.wavelen)
-        variable_layout.addRow('Defocus', self.defocus)
-        self.variable_group.setLayout(variable_layout)
-
-
         self.particle_group = QGroupBox('Scattering')
         particle_layout = QFormLayout()
+        particle_layout.addRow('Wavelength', self.wavelen)
+        particle_layout.addRow('Defocus', self.defocus)
+
         particle_layout.addRow('X Position', self.x0)
         particle_layout.addRow('Y Position', self.y0)
         particle_layout.addRow('Z Position', self.z_particle)
@@ -297,9 +292,6 @@ class ParameterWindow(QDockWidget):
         self.tabwidget.addTab(self.setup_tab, 'Setup')
         setuptab_layout = QVBoxLayout()
         setuptab_layout.addWidget(self.setup_group)
-        #setuptab_layout.addWidget(self.variable_group)
-        #setuptab_layout.addWidget(self.particle_group)
-        #setuptab_layout.addWidget(self.orientation_group)
         setuptab_layout.addWidget(self.model_group)
         setuptab_layout.addStretch(1)
 
