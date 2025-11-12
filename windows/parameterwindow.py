@@ -212,7 +212,7 @@ class ParameterWindow(QDockWidget):
         orientation_layout.addRow('Multipolar', self.multipolar_toggle)
         orientation_layout.addRow('aspect ratio', self.aspect_ratio)
         orientation_layout.addRow('Azimuth', self.azimuth)
-        #orientation_layout.addRow('Inclination', self.inclination)
+        orientation_layout.addRow('Inclination', self.inclination)
         orientation_layout.addWidget(QLabel('Excitation'))
         orientation_layout.addRow('Polarized', self.polarized)
         orientation_layout.addRow('Polarization', self.polarization_angle)
