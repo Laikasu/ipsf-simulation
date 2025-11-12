@@ -99,6 +99,11 @@ class ParameterWindow(QDockWidget):
         self.polarized.stateChanged.connect(partial(self.changed_value, 'polarized'))
         self.polarized.stateChanged.connect(self.update_controls)
 
+        self.dipole = QCheckBox()
+        self.dipole.setChecked(model.defaults['dipole'])
+        self.dipole.stateChanged.connect(partial(self.changed_value, 'dipole'))
+        self.dipole.stateChanged.connect(self.update_controls)
+
         self.aberrations = QCheckBox()
         self.aberrations.setChecked(model.defaults['aberrations'])
         self.aberrations.stateChanged.connect(partial(self.changed_value, 'aberrations'))
@@ -210,9 +215,10 @@ class ParameterWindow(QDockWidget):
         orientation_layout = QFormLayout()
         orientation_layout.addWidget(QLabel('Scatterer'))
         orientation_layout.addRow('Multipolar', self.multipolar_toggle)
-        orientation_layout.addRow('aspect ratio', self.aspect_ratio)
         orientation_layout.addRow('Azimuth', self.azimuth)
         orientation_layout.addRow('Inclination', self.inclination)
+        orientation_layout.addRow('Dipole', self.dipole)
+        orientation_layout.addRow('Aspect ratio', self.aspect_ratio)
         orientation_layout.addWidget(QLabel('Excitation'))
         orientation_layout.addRow('Polarized', self.polarized)
         orientation_layout.addRow('Polarization', self.polarization_angle)
