@@ -54,6 +54,11 @@ class MainWindow(QMainWindow):
         self.plot_window.hide()
         
         self.addDockWidget(Qt.RightDockWidgetArea, self.parameter_window)
+
+        self.setCentralWidget(self.display)
+        self.statusBar().showMessage('Ready')
+        self.print_label = QLabel('', self.statusBar())
+        self.statusBar().addPermanentWidget(self.print_label)
         
 
         self.createUI()
