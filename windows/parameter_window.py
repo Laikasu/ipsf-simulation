@@ -40,16 +40,6 @@ class ParameterWindow(QDockWidget):
         self.params = {}
         self.tabwidget = QTabWidget(self)
         self.setWidget(self.tabwidget)
-
-        # Load from file
-        # if QFileInfo.exists(parent.parameters_file):
-        #     # Load info from parameters file
-        #     try:
-        #         with open(parent.parameters_file, 'r') as file:
-        #             model = DesignParams(**json.load(file))
-        #     except:
-        #         print('failed loading params')
-
         
 
         self.efficiency = QDoubleSpinBox(**self.params_info['efficiency'])
@@ -333,11 +323,10 @@ class ParameterWindow(QDockWidget):
         self.azimuth.setEnabled(a)
         self.inclination.setEnabled(a)
         self.aspect_ratio.setEnabled(a)
-
+        self.dipole.setEnabled(a)
 
         self.polarization_angle.setEnabled(self.polarized.isChecked())
         self.n_custom.setEnabled(self.n_scat.currentText() == 'custom')
-
 
         checked = self.aberrations.isChecked()
         for param in [self.n_glass, self.n_glass0, self.n_oil, self.n_oil0, self.t_oil0, self.t_glass, self.t_glass0]:
@@ -350,8 +339,6 @@ class ParameterWindow(QDockWidget):
             self.start.setValue(model.defaults[param])
             self.stop.setProperty(k, v)
             self.stop.setValue(model.defaults[param]+self.num.value()*info['singleStep'])
-
-        
     
     def sweep(self):
         param = np.linspace(self.start.value(), self.stop.value(), self.num.value())

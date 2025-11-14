@@ -13,7 +13,8 @@ import tifffile as tiff
 
 import processing as pc
 
-from typing import List
+from collections.abc import Sequence
+from numpy.typing import NDArray
 
 #from matplotlib_scalebar.scalebar import ScaleBar
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
@@ -26,59 +27,62 @@ class MplCanvas(FigureCanvasQTAgg):
         self.axes.set_axis_off()
         fig.tight_layout(pad=2)
         super().__init__(fig)
-        
-        self.image: AxesImage = None
-        self.anim: FuncAnimation = None
+
+
         self.fps = 10
         self.cmap = 'viridis'
         self.mode = 'signal'
+        
+        self.axes_image: AxesImage = self.axes.imshow(np.zeros((35, 35)), cmap=self.cmap)
+        self.anim: FuncAnimation | None = None
+        self.colorbar = self.figure.colorbar(self.axes_image)
+        self.scalebar = AnchoredSizeBar(self.axes.transData, 0.4, '400 nm', 'lower center', pad=0.1, frameon=False, color='white', sep=5)
+        self.axes.add_artist(self.scalebar)
+        
 
         self.data_directory = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
 
-    def update_image(self, intensities: np.ndarray = None, pxsize: float = None):
+    def update_image(self, intensities: NDArray | None = None, pxsize: float | None = None):
         if intensities is not None:
             self.intensities = intensities
         frame = self.intensities[self.mode]
-        rows, cols = frame.shape
+        
+        # Remove anim
         if self.anim is not None:
             self.anim.pause()
             self.anim = None
-        if self.image is None:
-            self.image = self.axes.imshow(frame, cmap=self.cmap)
-            if pxsize is not None:
-                self.pxsize = pxsize
-                self.image.set_extent((0, pxsize*rows, 0, pxsize*cols))
-            self.colorbar = self.figure.colorbar(self.image)
-            scalebar = AnchoredSizeBar(self.axes.transData, 0.2, '200 nm', 'lower center', pad=0.1, frameon=False, color='white', sep=5)
-            self.axes.add_artist(scalebar)
-        else:
-            self.image.set_data(frame)
+        
+        self.axes_image.set_data(frame)
 
-            # Update pxsize
-            if pxsize:
-                self.pxsize = pxsize
+        # Update pxsize
+        if pxsize is not None:
+            rows, cols = frame.shape
+            self.pxsize = pxsize
+            self.axes_image.set_extent((0, self.pxsize*rows, 0, self.pxsize*cols))
 
-            self.image.set_extent((0, self.pxsize*rows, 0, self.pxsize*cols))
-            # Double bc it doesnt set them simultaneously
-            self.image.set_clim(np.min(frame), np.max(frame))
-            self.image.set_clim(np.min(frame), np.max(frame))
-            self.draw_idle()
+        # Limits (double bc it doesnt set them simultaneously)
+        self.axes_image.set_clim(np.min(frame), np.max(frame))
+        self.axes_image.set_clim(np.min(frame), np.max(frame))
+
+        self.draw_idle()
 
     
 
     def animate(self, frame: int):
         intensity = self.intensities[self.mode][frame]
-        self.image.set_data(intensity)
-        if self.pxsizes is not None and np.iterable(self.pxsizes):
-            self.pxsize = self.pxsizes[frame]
-        if self.param is not None:
+        self.axes_image.set_data(intensity)
+
+        
+        if self.param is not None and self.param_name is not None:
             self.axes.set_title(self.param_name + f' = {self.param[frame]:.2f}')
+        
         rows, cols = intensity.shape
-        self.image.set_extent((0, self.pxsize*rows, 0, self.pxsize*cols))
-        return self.image,
+        self.axes_image.set_extent((0, self.pxsize*rows, 0, self.pxsize*cols))
+        return self.axes_image,
 
     def save(self):
         if self.anim:
+            # Save animation as multipage tif or gif
             dialog = QFileDialog()
             dialog.setNameFilters(("GIF Files (*.gif)", "TIFF file (*.tif)"))
             dialog.setFileMode(QFileDialog.FileMode.AnyFile)
@@ -96,16 +100,19 @@ class MplCanvas(FigureCanvasQTAgg):
                     filepath += format_extension
 
                 if "tif" in selected_filter:
-                    intensities = np.array([intensity[self.mode] for intensity in self.intensities])
+                    self.anim.pause()
+                    intensities = self.intensities[self.mode].copy()
                     
                     minimum = np.min(intensities)
                     maximum = np.max(intensities)
                     intensities /= max(minimum, maximum)
                     tiff.imwrite(filepath, pc.float_to_mono(intensities))
+                    self.anim.resume()
                 elif "gif" in selected_filter:
                     self.anim.save(filepath, fps=self.fps)
             self.data_directory = dialog.directory()
-        elif self.image:
+        else:
+            # Save animation as animated gif
             dialog = QFileDialog(self)
             dialog.setNameFilter("Image Files(*.png *.jpg *.bmp)")
             dialog.setFileMode(QFileDialog.FileMode.AnyFile)
@@ -115,44 +122,54 @@ class MplCanvas(FigureCanvasQTAgg):
                 filepath = dialog.selectedFiles()[0]
                 self.figure.savefig(filepath)
             self.data_directory = dialog.directory()
-
-    def update_animation(self, intensities: List[np.ndarray] = None, pxsizes: List[float] = None, param_name: str = None, param: np.ndarray = None):
+        
+    
+    def update_animation(self, 
+                         intensities: dict[str, NDArray],
+                         param_name: str | None = None,
+                         param: np.ndarray | None = None):
+        """Set new intensity data as animation"""
+        
         if self.anim is not None:
             self.anim.pause()
-        if intensities is not None:
-            self.intensities = intensities
-        if pxsizes is not None:
-            self.pxsizes = pxsizes
-        if param_name is not None:
-            self.param_name = param_name
-        if param is not None:
-            self.param = param
+        
+        self.intensities = intensities
+        self.param_name = param_name
+        self.param = param
 
-        intensities = self.intensities[self.mode]
-        minimum = np.min(intensities)
-        maximum = np.max(intensities)
-        self.image.set_clim(minimum, maximum)
-        self.image.set_clim(minimum, maximum)
-        self.anim = FuncAnimation(self.figure, self.animate, frames=len(intensities), interval=int(1000/self.fps), blit=False)
+        video: NDArray = self.intensities[self.mode]
+        minimum = np.min(video)
+        maximum = np.max(video)
+        self.axes_image.set_clim(minimum, maximum)
+        self.axes_image.set_clim(minimum, maximum)
+        self.anim = FuncAnimation(self.figure, self.animate, frames=len(video), interval=int(1000/self.fps), blit=False)
         self.draw_idle()
+
+    
+    def refresh_animation(self):
+        """Refresh animation using new fps, cmap, mode"""
+        video: NDArray = self.intensities[self.mode]
+        minimum = np.min(video)
+        maximum = np.max(video)
+        self.axes_image.set_clim(minimum, maximum)
+        self.axes_image.set_clim(minimum, maximum)
+        self.anim = FuncAnimation(self.figure, self.animate, frames=len(video), interval=int(1000/self.fps), blit=False)
+        self.draw_idle()
+
 
     def set_fps(self, fps):
         self.fps = fps
         if self.anim is not None:
-            self.update_animation()
+            self.refresh_animation()
     
     def set_cmap(self, cmap):
         self.cmap = cmap
-        if self.image is not None:
-            self.image.set_cmap(cmap)
-            if self.anim is None:
-                self.update_image()
+        self.axes_image.set_cmap(cmap)
+        if self.anim is None:
+            self.update_image()
     
-    def set_mode(self, mode):
+    def set_mode(self, mode: str):
         self.mode = mode
         if self.anim is not None:
-            self.update_animation()
-        elif self.image is not None:
+            self.refresh_animation()
             self.update_image()
-
-
