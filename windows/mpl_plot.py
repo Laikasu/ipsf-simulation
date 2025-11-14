@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 
-from typing import List
-
 from scipy.signal import savgol_filter
 
 from PySide6.QtGui import QAction, QKeySequence
@@ -23,11 +21,12 @@ class PlotWindow(QWidget):
 
         self.save_act = QAction("Save")
         self.save_act.triggered.connect(self.plot.save)
-        self.save_act.setShortcut(QKeySequence.Save)
+        self.save_act.setShortcut(QKeySequence.StandardKey.Save)
 
         self.close_act = QAction("Close")
         self.close_act.triggered.connect(self.close)
-        self.close_act.setShortcuts([QKeySequence.Quit, QKeySequence.Cancel])
+        self.close_act.setShortcuts([QKeySequence(QKeySequence.StandardKey.Quit),
+                                     QKeySequence(QKeySequence.StandardKey.Cancel)])
 
         self.show_interference_act = QAction("Show Interference")
         self.show_interference_act.setCheckable(True)
@@ -62,7 +61,7 @@ class PlotWindow(QWidget):
 
         plot_layout = QVBoxLayout()
         plot_layout.setContentsMargins(0,0,0,0)
-        plot_layout.setAlignment(Qt.AlignTop)
+        plot_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         plot_layout.addWidget(self.menu_bar,0)
         plot_layout.addWidget(self.plot)
         self.setLayout(plot_layout)
@@ -86,12 +85,12 @@ class MplPlot(FigureCanvasQTAgg):
         self.show_if = True
         self.show_sig = True
         self.show_derivatives = False
-        self.plot_scat: List[Line2D] = None
-        self.plot_if: List[Line2D] = None
-        self.plot_sig: List[Line2D] = None
-        self.plot_scat_deriv: List[Line2D] = None
-        self.plot_if_deriv: List[Line2D] = None
-        self.plot_sig_deriv: List[Line2D] = None
+        self.plot_scat: list[Line2D] | None = None
+        self.plot_if: list[Line2D] | None = None
+        self.plot_sig: list[Line2D] | None = None
+        self.plot_scat_deriv: list[Line2D] | None = None
+        self.plot_if_deriv: list[Line2D] | None = None
+        self.plot_sig_deriv: list[Line2D] | None = None
     
     def set_show_if(self, value):
         self.show_if = value
@@ -188,7 +187,7 @@ class MplPlot(FigureCanvasQTAgg):
 
 
     def save(self):
-        loc = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
+        loc = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation)
         filepath, _ = QFileDialog.getSaveFileName(self, "Save Figure", loc,"Image Files(*.png *.jpg *.bmp)")
         if filepath:
             self.figure.savefig(filepath)

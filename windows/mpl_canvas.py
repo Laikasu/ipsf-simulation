@@ -40,7 +40,7 @@ class MplCanvas(FigureCanvasQTAgg):
         self.axes.add_artist(self.scalebar)
         
 
-        self.data_directory = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
+        self.data_directory = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation)
 
     def update_image(self, intensities: NDArray | None = None, pxsize: float | None = None):
         if intensities is not None:

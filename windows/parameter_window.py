@@ -235,7 +235,7 @@ class ParameterWindow(QDockWidget):
         check_layout = QFormLayout()
         check_layout.addRow('Abberations', self.aberrations)
         abertations_layout = QGridLayout()
-        abertations_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        abertations_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         abertations_layout.addWidget(QLabel('Parameter'),0,0)
         abertations_layout.addWidget(QLabel('n_oil'),1,0)
         abertations_layout.addWidget(QLabel('n_glass'),2,0)

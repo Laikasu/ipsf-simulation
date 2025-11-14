@@ -8,9 +8,7 @@ import os
 import numpy as np
 
 from main_controller import MainController
-from windows.mpl_canvas import MplCanvas
-from windows.mpl_plot import PlotWindow
-from windows.parameter_window import ParameterWindow
+from windows import MplCanvas, PlotWindow, ParameterWindow
 
 class MainWindow(QMainWindow):
     def __init__(self, controller: MainController):
@@ -20,8 +18,8 @@ class MainWindow(QMainWindow):
         
 
         # Make sure the %appdata%/ipsf-simulation directory exists
-        appdata_directory = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
-        picture_directory = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
+        appdata_directory = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
+        picture_directory = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation)
         QDir(appdata_directory).mkpath(".")
 
         self.psf_directory = picture_directory + "/PSF"
@@ -35,7 +33,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.display)
 
         self.parameter_window = ParameterWindow("Parameters", self)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.parameter_window)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.parameter_window)
 
         self.plot_window = PlotWindow()
         self.plot = self.plot_window.plot
@@ -79,12 +77,12 @@ class MainWindow(QMainWindow):
         self.show_parameters_act = QAction("&Parameters", self)
         self.show_parameters_act.setStatusTip("Show parameter panel")
         self.show_parameters_act.triggered.connect(lambda: self.parameter_window.setVisible(not self.parameter_window.isVisible()))
-        self.show_parameters_act.setShortcut(Qt.CTRL | Qt.SHIFT | Qt.Key_P)
+        self.show_parameters_act.setShortcut(QKeySequence("Ctrl+Shift+P"))
 
         self.show_plot_act = QAction("&Show Plot", self)
         self.show_plot_act.setStatusTip("Show plot panel")
         self.show_plot_act.triggered.connect(lambda: self.plot_window.setVisible(not self.plot_window.isVisible()))
-        self.show_plot_act.setShortcut(Qt.CTRL | Qt.SHIFT | Qt.Key_S)
+        self.show_plot_act.setShortcut(QKeySequence("Ctrl+Shift+S"))
 
         self.set_scat_act = QAction("&Scattering", self)
         self.set_scat_act.setStatusTip("Show scattering psf")
@@ -107,10 +105,10 @@ class MainWindow(QMainWindow):
         self.save_figure_act = QAction("Save", self)
         self.save_figure_act.setStatusTip("Save figure")
         self.save_figure_act.triggered.connect(self.display.save)
-        self.save_figure_act.setShortcut(QKeySequence.Save)
+        self.save_figure_act.setShortcut(QKeySequence.StandardKey.Save)
         
         self.exit_act = QAction("E&xit", self)
-        self.exit_act.setShortcut(QKeySequence.Quit)
+        self.exit_act.setShortcut(QKeySequence.StandardKey.Quit)
         self.exit_act.setStatusTip("Exit program")
         self.exit_act.triggered.connect(self.close)
 
