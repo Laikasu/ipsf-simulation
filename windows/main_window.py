@@ -7,58 +7,57 @@ import os
 
 import numpy as np
 
-from windows.mplcanvas import MplCanvas
-from windows.mplplot import MplPlot
-from windows.mplplot import PlotWindow
-
-import model
-from windows.parameterwindow import ParameterWindow
+from main_controller import MainController
+from windows.mpl_canvas import MplCanvas
+from windows.mpl_plot import PlotWindow
+from windows.parameter_window import ParameterWindow
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, controller: MainController):
         application_path = os.path.abspath(os.path.dirname(__file__)) + os.sep
         QMainWindow.__init__(self)
         #self.setWindowIcon(QIcon(application_path + "/images/psf.ico"))
         
 
-        # Make sure the %appdata%/demoapp directory exists
+        # Make sure the %appdata%/ipsf-simulation directory exists
         appdata_directory = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
         picture_directory = QStandardPaths.writableLocation(QStandardPaths.PicturesLocation)
         QDir(appdata_directory).mkpath(".")
-        
 
         self.psf_directory = picture_directory + "/PSF"
         QDir(self.psf_directory).mkpath(".")
 
-        #self.display = ImageView(self)
+        self.controller = controller
+
+
+        # Widgets
         self.display = MplCanvas(self)
-
-        self.intensity = None
-        self.mode = "scat"
-
-        self.parameters_file = appdata_directory + "/parameters.json"
-
+        self.setCentralWidget(self.display)
 
         self.parameter_window = ParameterWindow("Parameters", self)
-        self.parameter_window.update_psf.connect(self.update_psf)
-        self.update_psf(self.parameter_window.params)
-        self.parameter_window.sweep_params.connect(self.sweep)
-        self.parameter_window.fps_changed.connect(self.display.set_fps)
-
-        
-        
-        self.plot_window = PlotWindow()
-        self.plot = self.plot_window.plot
-        
-
-        self.plot_window.hide()
-        
         self.addDockWidget(Qt.RightDockWidgetArea, self.parameter_window)
 
-        self.setCentralWidget(self.display)
-        self.statusBar().showMessage('Ready')
-        self.print_label = QLabel('', self.statusBar())
-        self.statusBar().addPermanentWidget(self.print_label)
+        self.plot_window = PlotWindow()
+        self.plot = self.plot_window.plot
+        self.plot_window.hide()
+
+        
+        # Routing
+        self.parameter_window.update_psf.connect(self.controller.update_psf)
+        self.controller.display_update.connect(self.display.update_image)
+        self.controller.update_psf(self.parameter_window.params)
+
+        self.parameter_window.sweep_params.connect(self.controller.sweep)
+        self.controller.display_anim_update.connect(self.display.update_animation)
+        self.controller.plot_update.connect(self.display.update_animation)
+
+        self.parameter_window.fps_changed.connect(self.display.set_fps)
+        
+        
+        # Statusbar
+        # self.statusBar().showMessage('Ready')
+        # self.print_label = QLabel('', self.statusBar())
+        # self.statusBar().addPermanentWidget(self.print_label)
         
 
         self.createUI()
@@ -137,7 +136,7 @@ class MainWindow(QMainWindow):
         view_menu.addAction(self.set_gray_act)
         view_menu.addAction(self.set_viridis_act)
 
-        
+        self.setCentralWidget(self.display)
         
 
 
@@ -166,9 +165,10 @@ class MainWindow(QMainWindow):
 
 
 
-        self.setCentralWidget(self.display)
+        #===========#
+        # Statusbar #
+        #===========#
         
-
         # self.statusBar().showMessage("Ready")
         # self.aquisition_label = QLabel("", self.statusBar())
         # self.statusBar().addPermanentWidget(self.aquisition_label)
@@ -181,31 +181,3 @@ class MainWindow(QMainWindow):
         # self.update_statistics_timer = QTimer()
         # self.update_statistics_timer.timeout.connect(self.onUpdateStatisticsTimer)
         # self.update_statistics_timer.start()
-    
-    def update_psf(self, params: dict):
-        # pxsize is necessary for scalebar
-        pxsize = params.get('pxsize', model.defaults['pxsize'])
-        magnification = params.get('magnification', model.defaults['magnification'])
-        pxsize_obj = pxsize/magnification
-        signal=['scattering', 'interference', 'signal']
-
-        interference_contrast, scattering_contrast = model.simulate_camera(**params)
-        self.intensity = {'scattering': scattering_contrast,
-                          'interference': interference_contrast,
-                          'signal': scattering_contrast + interference_contrast}
-        self.display.update_image(self.intensity, pxsize_obj)
-    
-    def sweep(self, params: dict):
-        pxsize = params.get('pxsize', model.defaults['pxsize'])
-        magnification = params.get('magnification', model.defaults['magnification'])
-
-        interference_contrast, scattering_contrast = model.simulate_camera(**params)
-        self.intensity = {'scattering': scattering_contrast,
-                          'interference': interference_contrast,
-                          'signal': scattering_contrast + interference_contrast}
-        pxsizes = (pxsize/magnification)
-
-        param_name, param = [(k,v) for (k,v) in params.items() if isinstance(v, np.ndarray)][0]
-        
-        self.display.update_animation(self.intensity, pxsizes, param_name, param)
-        self.plot.plot(self.intensity, param)

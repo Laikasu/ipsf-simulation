@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QApplication, QMessageBox
-from windows.mainwindow import MainWindow
+from windows.main_window import MainWindow
+from main_controller import MainController
 import sys
 import traceback
 
@@ -23,7 +24,8 @@ def main():
     app.setApplicationDisplayName("iPSF Simulation")
     app.setStyle("fusion")
 
-    w = MainWindow()
+    controller = MainController()
+    w = MainWindow(controller)
     w.show()
     
 
