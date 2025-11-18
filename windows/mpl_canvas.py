@@ -148,6 +148,10 @@ class MplCanvas(FigureCanvasQTAgg):
     
     def refresh_animation(self):
         """Refresh animation using new fps, cmap, mode"""
+
+        if self.anim is not None:
+            self.anim.pause()
+        
         video: NDArray = self.intensities[self.mode]
         minimum = np.min(video)
         maximum = np.max(video)
