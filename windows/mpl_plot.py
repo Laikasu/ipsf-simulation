@@ -168,9 +168,10 @@ class MplPlot(FigureCanvasQTAgg):
         self.draw_idle()
 
 
-    def plot(self, intensities, param):
+    def plot(self, intensities, param_name, param):
         self.figure.clf()
         self.param = param
+        self.param_name = param_name
         intensity = intensities['scattering']
         N, height, width = np.shape(intensity)
         self.contrast['scattering'] = intensity[:,height//2, width//2]

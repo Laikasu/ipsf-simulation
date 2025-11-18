@@ -172,4 +172,5 @@ class MplCanvas(FigureCanvasQTAgg):
         self.mode = mode
         if self.anim is not None:
             self.refresh_animation()
+        else:
             self.update_image()

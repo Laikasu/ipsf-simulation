@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
 
         self.parameter_window.sweep_params.connect(self.controller.sweep)
         self.controller.display_anim_update.connect(self.display.update_animation)
-        self.controller.plot_update.connect(self.display.update_animation)
+        self.controller.plot_update.connect(self.plot.plot)
 
         self.parameter_window.fps_changed.connect(self.display.set_fps)
         
