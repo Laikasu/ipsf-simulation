@@ -338,7 +338,7 @@ class ParameterWindow(QDockWidget):
             self.start.setProperty(k, v)
             self.start.setValue(model.defaults[param])
             self.stop.setProperty(k, v)
-            self.stop.setValue(model.defaults[param]+self.num.value()*info['singleStep'])
+            self.stop.setValue(model.defaults[param]+(self.num.value()*info['singleStep']))
     
     def sweep(self):
         param = np.linspace(self.start.value(), self.stop.value(), self.num.value())
