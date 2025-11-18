@@ -6,7 +6,7 @@ class MainController(QObject):
 
     display_update = Signal(dict, float)
     display_anim_update = Signal(dict, str, np.ndarray)
-    plot_update = Signal(dict, str)
+    plot_update = Signal(dict, str, np.ndarray)
 
     
     def update_psf(self, params: dict):
@@ -32,4 +32,4 @@ class MainController(QObject):
         param_name, param = [(k,v) for (k,v) in params.items() if isinstance(v, np.ndarray)][0]
         
         self.display_anim_update.emit(self.intensity, param_name, param)
-        self.plot_update.emit(self.intensity, param)
+        self.plot_update.emit(self.intensity, param_name, param)
