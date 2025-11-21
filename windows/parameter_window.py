@@ -287,6 +287,7 @@ class ParameterWindow(QDockWidget):
         setuptab_layout = QVBoxLayout()
         setuptab_layout.addWidget(self.setup_group)
         setuptab_layout.addWidget(self.model_group)
+        setuptab_layout.addWidget(self.abertations_group)
         setuptab_layout.addStretch(1)
         self.setup_tab.setLayout(setuptab_layout)
 
