@@ -8,8 +8,11 @@
 - Efficient computational methods for high-speed simulations
 
 ## Installation
+- For Windows an installer is provided under releases
+- For any os the app can be run through python.
 ```bash
 git clone https://github.com/Laikasu/ipsf-simulation.git
 cd ./iPSF-Simulation
 pip install -r requirements.txt
 python main.py
+
