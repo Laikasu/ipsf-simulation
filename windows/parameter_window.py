@@ -29,7 +29,6 @@ class ParameterWindow(QDockWidget):
             'defocus': {'minimum': -5, 'maximum': 5, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' um'},
             'xy_position': {'minimum': -2, 'maximum': 2, 'singleStep': 0.1, 'decimals': 2, 'suffix': ' um'},
             'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm'},
-            'r_resolution': {'minimum': 10, 'maximum': 100, 'singleStep': 10},
             'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1},
             'aspect_ratio': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 2},
         }
@@ -81,10 +80,6 @@ class ParameterWindow(QDockWidget):
         self.polarization_angle.valueChanged.connect(partial(self.changed_value, 'polarization_angle'))
 
         # Model
-
-        self.resolution = QSpinBox(**self.params_info['r_resolution'])
-        self.resolution.setValue(model.defaults['r_resolution'])
-        self.resolution.valueChanged.connect(partial(self.changed_value, 'r_resolution'))
 
         self.polarized = QCheckBox()
         self.polarized.setChecked(model.defaults['polarized'])
@@ -225,7 +220,6 @@ class ParameterWindow(QDockWidget):
         # Model group
         self.model_group = QGroupBox('Model')
         model_layout = QFormLayout()
-        model_layout.addRow('Radial Resolution', self.resolution)
         model_layout.addRow('Efficiency', self.efficiency)
         self.model_group.setLayout(model_layout)
 
