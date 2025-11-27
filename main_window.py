@@ -1,11 +1,8 @@
-from PySide6.QtCore import QStandardPaths, QDir, QTimer, QEvent, QFileInfo, Qt, Signal, QThread, QSettings
-from PySide6.QtGui import QAction, QKeySequence, QCloseEvent, QIcon, QImage
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QFileDialog, QToolBar, QDockWidget, QWidget, QVBoxLayout
+from PySide6.QtCore import QStandardPaths, QDir, Qt
+from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtWidgets import QMainWindow, QApplication
 
-import json
 import os
-
-import numpy as np
 
 from main_controller import MainController
 from windows import MplCanvas, PlotWindow, ParameterWindow

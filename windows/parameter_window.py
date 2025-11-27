@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QLabel, QFormLayout, QDoubleSpinBox, QCheckBox, QSpinBox, QGroupBox, QTabWidget, QHBoxLayout, QVBoxLayout, QComboBox, QPushButton, QGridLayout, QDockWidget
-from PySide6.QtCore import Signal, Qt, QFileInfo, QTimer
+from PySide6.QtCore import Signal, Qt
 
 import numpy as np
 import model
