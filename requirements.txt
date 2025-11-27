@@ -3,4 +3,4 @@ numpy
 pyside6
 matplotlib
 tifffile
-git+https://github.com/Laikasu/Model.git@0.1.2
+git+https://github.com/Laikasu/Model.git@0.1.3
