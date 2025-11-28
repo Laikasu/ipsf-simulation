@@ -14,19 +14,8 @@ from numpy.typing import NDArray
 from scipy.special import jv
 from scipy.integrate import quad_vec
 from scipy.interpolate import interp1d
-from importlib import resources
 
-
-# Gold
-
-# Johnsonn and Christy data for gold
-# https://refractiveindex.info/?shelf=main&book=Au&page=Johnson
-with resources.files("model").joinpath('Johnson.csv').open("r") as file:
-    gold = np.genfromtxt(file, delimiter=',', skip_header=1).T
-_gold_wavelen = gold[0]
-_n_gold = gold[1] - 1j*gold[2]
-n_gold = interp1d(_gold_wavelen*10**-6, _n_gold, kind='cubic')
-
+from .n_gold import n_gold
 import scipy.constants as const
 
 def drude_gold(wavelen):
