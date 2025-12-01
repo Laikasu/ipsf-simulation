@@ -8,6 +8,16 @@ from functools import partial
 
 # TO DO: Parameter overhaul
 
+class ToolTipForm(QFormLayout):
+    def addRow(self, label, field=None):
+        name = QLabel(label)
+        if field is not None:
+            tooltip = field.toolTip()
+            if tooltip != None:
+                name.setToolTip(tooltip)
+
+        super().addRow(name, field)
+
 class ParameterWindow(QDockWidget):
     '''Window where you set the parameters.'''
 
@@ -16,21 +26,22 @@ class ParameterWindow(QDockWidget):
     fps_changed = Signal(int)
 
     params_info = {
-            'magnification': {'minimum': 10, 'maximum': 200, 'singleStep': 10, 'suffix': 'x'},
-            'roi_size': {'minimum': 0.2, 'maximum': 10, 'singleStep': 0.4, 'suffix': ' um', 'decimals': 1},
-            'pxsize': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'suffix': ' um', 'decimals': 2},
-            'wavelen': {'minimum': 300, 'maximum': 900, 'singleStep': 20, 'decimals': 1, 'suffix': ' nm'},
-            'azimuth': {'minimum': 0, 'maximum': 360, 'singleStep': 10, 'suffix': '°'},
-            'inclination': {'minimum': 0, 'maximum': 90, 'singleStep': 10, 'suffix': '°'},
-            'RI': {'minimum': 1, 'maximum': 10, 'singleStep': 0.01, 'decimals': 4},
-            'n_medium': {'minimum': 1, 'maximum': 10, 'singleStep': 0.01, 'decimals': 4, 'suffix': ''},
-            'thickness': {'minimum': 1, 'maximum': 1000, 'singleStep':1, 'decimals': 0, 'suffix': ' um'},
-            'z_p': {'minimum': 0, 'maximum': 10, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' um'},
-            'defocus': {'minimum': -5, 'maximum': 5, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' um'},
-            'xy_position': {'minimum': -2, 'maximum': 2, 'singleStep': 0.1, 'decimals': 2, 'suffix': ' um'},
-            'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm'},
-            'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1},
-            'aspect_ratio': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 2},
+            'magnification': {'minimum': 10, 'maximum': 200, 'singleStep': 10, 'suffix': 'x', 'toolTip': 'Objective magnification'},
+            'roi_size': {'minimum': 0.2, 'maximum': 10, 'singleStep': 0.4, 'suffix': ' um', 'decimals': 1, 'toolTip': 'Size of the region of interest in object space'},
+            'pxsize': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'suffix': ' um', 'decimals': 2, 'toolTip': 'Pixel size in image space'},
+            'wavelen': {'minimum': 300, 'maximum': 900, 'singleStep': 20, 'decimals': 1, 'suffix': ' nm', 'toolTip': 'Excitation light source wavelength'},
+            'azimuth': {'minimum': 0, 'maximum': 360, 'singleStep': 10, 'suffix': '°', 'toolTip': 'Orientation of major axis/dipole in the xy plane perpendicular to the light propagation axis z: angle from x-axis.'},
+            'polarization': {'minimum': 0, 'maximum': 360, 'singleStep': 10, 'suffix': '°', 'toolTip': 'Angle of incoming polarization from the x-axis'},
+            'inclination': {'minimum': 0, 'maximum': 90, 'singleStep': 10, 'suffix': '°', 'toolTip': 'Orientation of major axis/dipole in the light propagation axis z: angle from xy-plane'},
+            'RI': {'minimum': 1, 'maximum': 10, 'singleStep': 0.01, 'decimals': 4, 'toolTip': 'Refractive index of material'},
+            'n_medium': {'minimum': 1, 'maximum': 10, 'singleStep': 0.01, 'decimals': 4, 'suffix': '', 'toolTip': 'Refractive index of medium'},
+            'thickness': {'minimum': 1, 'maximum': 1000, 'singleStep':1, 'decimals': 0, 'suffix': ' um', 'toolTip': 'Layer thickness'},
+            'z_p': {'minimum': 0, 'maximum': 10, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' um', 'toolTip': 'Distance of bottom of particle above glass substrate'},
+            'defocus': {'minimum': -5, 'maximum': 5, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' um', 'toolTip': 'Distance between the actual focal plane and the particle’s focal plane in object space: negative when below, positive when above.'},
+            'xy_position': {'minimum': -2, 'maximum': 2, 'singleStep': 0.1, 'decimals': 2, 'suffix': ' um', 'toolTip': 'Particle position'},
+            'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm', 'toolTip': 'Nanoparticle diameter; with rods/spheroids this is the minor axis diameter'},
+            'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1, 'toolTip': 'test', 'toolTip': 'Adjustment to the collection efficiency to take effects into account that are not in the model; eg stronger coupling due to proximity to glass substrate'},
+            'aspect_ratio': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 2, 'toolTip': 'Ratio between the major axis of the nanorod/spheroid and the minor axes: b/a. For rods this is higher than 0. NB rods are not spheroids so this is an approximation'},
         }
 
     def __init__(self, name, parent=None):
@@ -58,7 +69,7 @@ class ParameterWindow(QDockWidget):
         self.roi_size.setValue(model.defaults['roi_size'])
         self.roi_size.valueChanged.connect(partial(self.changed_value, 'roi_size'))
 
-        self.pxsize = QDoubleSpinBox(**self.params_info['roi_size'])
+        self.pxsize = QDoubleSpinBox(**self.params_info['pxsize'])
         self.pxsize.setValue(model.defaults['pxsize'])
         self.pxsize.valueChanged.connect(partial(self.changed_value, 'pxsize'))
 
@@ -75,7 +86,7 @@ class ParameterWindow(QDockWidget):
         self.inclination.setValue(model.defaults['inclination'])
         self.inclination.valueChanged.connect(partial(self.changed_value, 'inclination'))
 
-        self.polarization_angle = QSpinBox(**self.params_info['azimuth'])
+        self.polarization_angle = QSpinBox(**self.params_info['polarization'])
         self.polarization_angle.setValue(model.defaults['polarization_angle'])
         self.polarization_angle.valueChanged.connect(partial(self.changed_value, 'polarization_angle'))
 
@@ -85,20 +96,25 @@ class ParameterWindow(QDockWidget):
         self.polarized.setChecked(model.defaults['polarized'])
         self.polarized.stateChanged.connect(partial(self.changed_value, 'polarized'))
         self.polarized.stateChanged.connect(self.update_controls)
+        self.polarized.setToolTip('Set wether the incoming light is polarized or not; in the unpolarized case the signal will be averaged over all polarizations')
 
         self.dipole = QCheckBox()
         self.dipole.setChecked(model.defaults['dipole'])
         self.dipole.stateChanged.connect(partial(self.changed_value, 'dipole'))
         self.dipole.stateChanged.connect(self.update_controls)
+        self.dipole.setToolTip('Simulate dipole scattering: a theoretical infinitely small needle object with length: aspect ratio x diameter')
+
 
         self.aberrations = QCheckBox()
         self.aberrations.setChecked(model.defaults['aberrations'])
         self.aberrations.stateChanged.connect(partial(self.changed_value, 'aberrations'))
         self.aberrations.stateChanged.connect(self.update_controls)
+        self.aberrations.setToolTip('Set wether aberrations are calculated based on mismatch in design system parameters and real parameters')
 
         self.multipolar_toggle = QCheckBox()
         self.multipolar_toggle.setChecked(model.defaults['multipolar'])
         self.multipolar_toggle.stateChanged.connect(partial(self.changed_value, 'multipolar'))
+        self.multipolar_toggle.setToolTip('Set wether Mie theory multipolar contributions are taken into account for nanoparticle scattering')
 
 
 
@@ -187,6 +203,7 @@ class ParameterWindow(QDockWidget):
         self.fps.valueChanged.connect(self.fps_changed.emit)
 
         self.live_mode = QCheckBox('Live Mode')
+        self.live_mode.setToolTip('Set wether parameter updates will recalculate the animation; if not the animation will be cancelled and a regular image is generated')
 
         self.start_sweep = QPushButton('Start sweep')
         self.start_sweep.clicked.connect(self.sweep)
@@ -197,7 +214,7 @@ class ParameterWindow(QDockWidget):
 
         # Setup group
         self.setup_group = QGroupBox('Setup')
-        setup_layout = QFormLayout()
+        setup_layout = ToolTipForm()
         setup_layout.addRow('Magnification', self.magnification)
         setup_layout.addRow('ROI Size', self.roi_size)
         setup_layout.addRow('Pixel Size', self.pxsize)
@@ -205,7 +222,7 @@ class ParameterWindow(QDockWidget):
 
         # Orientation group
         self.orientation_group = QGroupBox('Orientation and Polarization')
-        orientation_layout = QFormLayout()
+        orientation_layout = ToolTipForm()
         orientation_layout.addWidget(QLabel('Scatterer'))
         orientation_layout.addRow('Multipolar', self.multipolar_toggle)
         orientation_layout.addRow('Azimuth', self.azimuth)
@@ -219,14 +236,14 @@ class ParameterWindow(QDockWidget):
 
         # Model group
         self.model_group = QGroupBox('Model')
-        model_layout = QFormLayout()
+        model_layout = ToolTipForm()
         model_layout.addRow('Efficiency', self.efficiency)
         self.model_group.setLayout(model_layout)
 
         # Aberrations group
         self.abertations_group = QGroupBox('Abberations')
         abertations_group_layout = QVBoxLayout()
-        check_layout = QFormLayout()
+        check_layout = ToolTipForm()
         check_layout.addRow('Abberations', self.aberrations)
         abertations_layout = QGridLayout()
         abertations_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
@@ -253,7 +270,7 @@ class ParameterWindow(QDockWidget):
 
         # Particle Group
         self.particle_group = QGroupBox('Scattering')
-        particle_layout = QFormLayout()
+        particle_layout = ToolTipForm()
         particle_layout.addRow('Wavelength', self.wavelen)
         particle_layout.addRow('Defocus', self.defocus)
 
@@ -287,7 +304,7 @@ class ParameterWindow(QDockWidget):
 
         # Sweep animation tab
         self.anim_tab = QWidget(self)
-        animtab_layout = QFormLayout()
+        animtab_layout = ToolTipForm()
         animtab_layout.addRow('Parameter', self.misc)
         animtab_layout.addRow('Start', self.start)
         animtab_layout.addRow('Stop', self.stop)
