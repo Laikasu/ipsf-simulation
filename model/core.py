@@ -14,26 +14,11 @@ from numpy.typing import NDArray
 from scipy.special import jv
 from scipy.integrate import quad_vec
 from scipy.interpolate import interp1d
+from importlib import resources
 
+
+# Gold
 from .n_gold import n_gold
-import scipy.constants as const
-
-def drude_gold(wavelen):
-    """
-    Get the refractive index of gold according only to the Drude model.
-    """
-    # Johnson and Christy
-    f = 1
-    tau = 9*10**-15
-    damping = const.hbar/tau/const.e
-    res_p = 9.06
-    
-
-    freq_eV = const.h * const.c / (wavelen) / const.e
-
-    drude = -f * res_p**2 / (freq_eV**2 + 1j*freq_eV*damping)
-    epsilon = 9 + drude
-    return np.sqrt(epsilon)
 
 
 
@@ -64,7 +49,7 @@ defaults = {
     "defocus": 0,          # um
     "wavelen": 532,     # nm
     "NA": 1.4,
-    "multipolar": False,
+    "multipolar": True,
     "roi_size": 2,      # micron
     "pxsize": 3.45,     # micron
     "magnification": 60,
@@ -72,7 +57,6 @@ defaults = {
     "n_custom": n_ps,
     "x0": 0,               # micron
     "y0": 0,               # micron
-    "r_resolution": 30,
     "efficiency": 1.,   # Modification to the E_scat/E_ref ratio
     # Angles / Polarization
     "anisotropic": False,
@@ -94,6 +78,11 @@ def create_params(**kwargs) -> dict:
     """Insert defaults and convert units"""
     # Default insertion
     params = {**defaults, **kwargs}
+    
+    # Multipolar default on for aspect ratio 1
+    if not params['dipole']:
+        params['multipolar'] = np.isclose(params['aspect_ratio'],1.0)
+    else: params['multipolar'] = False
 
     # Unit conversion
     for um in microns:
@@ -229,7 +218,7 @@ def B(n, angle_oil, rs, **kwargs):
     wavelen = kwargs['wavelen']
     n_oil = kwargs['n_oil']
 
-    k_0 = -2*np.pi/wavelen
+    k_0 = 2*np.pi/wavelen
     return np.sqrt(np.cos(angle_oil))*np.sin(angle_oil)*jv(n, k_0*rs*n_oil*np.sin(angle_oil))*np.exp(1j*k_0*opd(angle_oil, **kwargs))
 
 
@@ -311,10 +300,11 @@ def calculate_propagation(**kwargs):
     [Es, Ep] = M [Ex, Ey, Ez]
     """
     wavelen = kwargs['wavelen']
-    r_resolution = kwargs['r_resolution']
     n_medium = kwargs['n_medium']
 
     camera = Camera(**kwargs)
+    # 2 for every pixel
+    r_resolution = camera.pixels+1
     rs = np.linspace(0, np.max(camera.r), r_resolution)
 
     I_0 = interp1d(rs, Integral_0(rs, **kwargs))(camera.r)
@@ -331,8 +321,8 @@ def calculate_propagation(**kwargs):
     e_sz = -2j*I_1*np.sin(camera.phi)
 
     k = 2*np.pi*n_medium/wavelen
-    plane_wave_decomp = 1j*k/2/np.pi
-    return -plane_wave_decomp*np.stack([[e_px, e_py, e_pz],
+    factor = -1j*k/2
+    return factor*np.stack([[e_px, e_py, e_pz],
                                         [e_sx, e_sy, e_sz]]).transpose((2, 3, 0, 1))
 
 
@@ -378,14 +368,14 @@ def calculate_fields(**kwargs) -> tuple[NDArray[np.complex128], NDArray[np.compl
         detector_field = np.einsum('ijab,bk->ijka', detector_field_components, scatter_field)
     
     # Apply collection efficiency modification
-    detector_field *= efficiency
+    detector_field *= efficiency*(1-r_gm)
 
     ref_polarization = np.array([np.cos(polarization_angle), np.sin(polarization_angle)]).T*np.ones_like(detector_field)
     reference_field = ref_polarization*E_reference
     
     # effect of inclination on opd
-    k = -2*np.pi/wavelen
-    detector_field /= np.exp(1j*k*opd_ref(**kwargs))
+    k_0 = 2*np.pi/wavelen
+    detector_field /= np.exp(1j*k_0*opd_ref(**kwargs))
 
 
     return detector_field, reference_field
@@ -623,7 +613,6 @@ def simulate_center(**kwargs) -> NDArray[np.float64]:
     """Simulate only the center pixel"""
     params = create_params(**kwargs)
     # Single pixel
-    params['r_resolution'] = 2
     roi_size = params['pxsize']/params['magnification']
     params['roi_size'] = roi_size
 
@@ -634,7 +623,6 @@ def simulate_field(**kwargs) -> NDArray[np.complex128]:
     """Simulate the field at the center pixel"""
     params = create_params(**kwargs)
     # Single pixel
-    params['r_resolution'] = 2
     roi_size = params['pxsize']/params['magnification']
     params['roi_size'] = roi_size
 
