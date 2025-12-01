@@ -16,6 +16,25 @@ from scipy.integrate import quad_vec
 from scipy.interpolate import interp1d
 
 from .n_gold import n_gold
+import scipy.constants as const
+
+def drude_gold(wavelen):
+    """
+    Get the refractive index of gold according only to the Drude model.
+    """
+    # Johnson and Christy
+    f = 1
+    tau = 9*10**-15
+    damping = const.hbar/tau/const.e
+    res_p = 9.06
+    
+
+    freq_eV = const.h * const.c / (wavelen) / const.e
+
+    drude = -f * res_p**2 / (freq_eV**2 + 1j*freq_eV*damping)
+    epsilon = 9 + drude
+    return np.sqrt(epsilon)
+
 
 
 # Parameters
