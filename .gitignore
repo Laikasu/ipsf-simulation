@@ -4,5 +4,6 @@ dist/
 build/
 main.spec
 iPSF_Simulation.iss
+icon.spec
 ipsf-simulation.spec
 output/
