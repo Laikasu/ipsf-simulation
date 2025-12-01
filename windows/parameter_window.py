@@ -168,6 +168,7 @@ class ParameterWindow(QDockWidget):
         self.n_scat.addItems(('gold', 'polystyrene', 'custom'))
         self.n_scat.setCurrentText(model.defaults['scat_mat'])
         self.n_scat.currentTextChanged.connect(partial(self.changed_value, 'scat_mat'))
+        self.setToolTip('Nanoparticle material')
 
         self.n_custom = QDoubleSpinBox(**self.params_info['RI'])
         self.n_custom.setValue(model.defaults['n_custom'])
@@ -277,10 +278,10 @@ class ParameterWindow(QDockWidget):
         particle_layout.addRow('X Position', self.x0)
         particle_layout.addRow('Y Position', self.y0)
         particle_layout.addRow('Z Position', self.z_p)
-        particle_layout.addRow('n_scat', self.n_scat)
-        particle_layout.addRow('custom RI', self.n_custom)
+        particle_layout.addRow('Material', self.n_scat)
+        particle_layout.addRow('Custom RI', self.n_custom)
         particle_layout.addRow('n_medium', self.n_medium)
-        particle_layout.addRow('diameter', self.diameter)
+        particle_layout.addRow('Diameter', self.diameter)
         self.particle_group.setLayout(particle_layout)
 
 
