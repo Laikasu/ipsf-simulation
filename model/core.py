@@ -79,10 +79,14 @@ def create_params(**kwargs) -> dict:
     # Default insertion
     params = {**defaults, **kwargs}
     
-    # Multipolar default on for aspect ratio 1
+    # Auto set multipolar: default on for aspect ratio 1
     if not params['dipole']:
         params['multipolar'] = np.isclose(params['aspect_ratio'],1.0)
     else: params['multipolar'] = False
+
+    # Don't overwrite
+    if 'multipolar' in kwargs.keys():
+        params['multipolar'] = kwargs['multipolar']
 
     # Unit conversion
     for um in microns:
@@ -516,6 +520,7 @@ def calculate_scatter_field_mie(angle, **kwargs):
     """
     Supports array inputs
     """
+    polarization_angle = kwargs['polarization_angle']
     n_medium = kwargs['n_medium']
     diameter = kwargs['diameter']
     wavelen = kwargs['wavelen']
