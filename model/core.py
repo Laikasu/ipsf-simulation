@@ -429,7 +429,7 @@ def calculate_fields(**kwargs) -> tuple[NDArray[np.complex128], NDArray[np.compl
     detector_field *= efficiency*(1-r_gm)
 
     # reference polarization gets a - from the gouy phase flip
-    ref_polarization = -np.array([np.cos(polarization_angle), np.sin(polarization_angle), np.zeros_like(polarization_angle)]).T*np.ones_like(detector_field)
+    ref_polarization = np.array([np.cos(polarization_angle), np.sin(polarization_angle), np.zeros_like(polarization_angle)]).T*np.ones_like(detector_field)
     reference_field = ref_polarization*E_reference
     
     # effect of inclination on opd
@@ -508,7 +508,7 @@ def calculate_scatter_field_dipole(**kwargs):
     dir = np.cos(inclination)*np.array([np.cos(rel_angle)*np.cos(inclination)*np.cos(azimuth),
                     np.cos(rel_angle)*np.cos(inclination)*np.sin(azimuth),
                     np.cos(rel_angle)*np.sin(inclination)])
-    return k**2/4/np.pi*polarizability*dir
+    return -k**2/4/np.pi*polarizability*dir
 
 
 
@@ -563,7 +563,7 @@ def calculate_scatter_field_anisotropic(**kwargs):
                     np.outer(a_perp*phi, phi@reference) + 
                     np.outer(a_perp*theta, theta@reference))
 
-    return k**2/4/np.pi*polarization
+    return -k**2/4/np.pi*polarization
     # if (x > 0.1):
     #     print("Exceeded bounds of Rayleigh approximation")
     
@@ -628,7 +628,7 @@ def calculate_scatter_field_mie(angle, **kwargs):
     mu = -np.cos(angle)
     S1, S2 = mie.S1_S2(m, x_mie, mu, norm='wiscombe')
     S = np.squeeze([S1, S2])
-    return S/1j/k
+    return -S/1j/k
 
 def calculate_scatter_field(multipolar=True, dipole=False, **kwargs):
     polarization_angle = kwargs['polarization_angle']
