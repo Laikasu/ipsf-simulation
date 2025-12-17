@@ -376,7 +376,7 @@ def calculate_propagation(**kwargs):
 
     e_zx = 2j*I_1_*np.sin(camera.phi)
     e_zy = 2j*I_1_*np.sin(camera.phi)
-    e_zz = -2j*I_0_
+    e_zz = -2*I_0_
 
     k = 2*np.pi*n_medium/wavelen
     factor = k/2
