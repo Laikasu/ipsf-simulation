@@ -139,14 +139,15 @@ def opd(angle_oil, **kwargs):
     t_glass0 = kwargs['t_glass0']
     t_oil0 = kwargs['t_oil0']
 
+    n_eff = lambda RI: np.sqrt(RI**2 - n_oil**2 *np.sin(angle_oil)**2)
     if aberrations:
         # Full opd
 
         # effective RI in the z direction
-        n_eff = lambda RI: np.sqrt(RI**2 - n_oil**2 *np.sin(angle_oil)**2)
+        
         # extra phase incurred by excitation beam
         excitation_opd = n_medium*z_p
-
+        
         # Phase differences in different media
         medium_opd = z_p*n_eff(n_medium)
         glass_opd = t_glass*n_eff(n_glass) - t_glass0*n_eff(n_glass0)
@@ -163,11 +164,12 @@ def opd(angle_oil, **kwargs):
 
         # extra phase incurred by excitation beam
         excitation_opd = n_medium*z_p
+        medium_opd = z_p*n_eff(n_medium)
 
         Dt_oil = z_p*(1 - n_oil/n_medium) - defocus
         n_eff_oil = n_oil*np.cos(angle_oil) # simplified
         
-        return n_eff_oil*Dt_oil + excitation_opd
+        return n_eff_oil*Dt_oil + medium_opd + excitation_opd
 
 def opd_ref(**kwargs):
     """
@@ -242,10 +244,10 @@ def Integral_0(rs, **kwargs):
         t_p_2 = t_p(n_glass, angle_glass, n_oil, angle_oil)
         t_s_1 = t_s(n_medium, angle_medium, n_glass, angle_glass)
         t_s_2 = t_s(n_glass, angle_glass, n_oil, angle_oil)
-        E_s, E_p = calculate_scatter_field_angular(angle_medium, **kwargs)
+        a_s, a_p, b_p = calculate_scatter_field_angular(angle_medium, **kwargs)
 
         return (B(0, angle_oil, rs, **kwargs)*
-            (E_s*t_s_1*t_s_2 + E_p*t_p_1*t_p_2))
+            (a_s*t_s_1*t_s_2 + np.cos(angle_oil)*a_p*t_p_1*t_p_2))
     
     # Vectorized over rs
     return quad_vec(integrand, 0, capture_angle_medium, epsrel=epsrel)[0]
@@ -263,9 +265,10 @@ def Integral_1(rs, **kwargs):
         angle_oil = snells_law(n_glass, angle_glass, n_oil)
         t_p_1 = t_p(n_medium, angle_medium, n_glass, angle_glass)
         t_p_2 = t_p(n_glass, angle_glass, n_oil, angle_oil)
+        a_s, a_p, b_p = calculate_scatter_field_angular(angle_medium, **kwargs)
 
         return (B(1, angle_oil, rs, **kwargs)*
-            t_p_1*t_p_2 * np.sin(angle_medium))
+            a_p* t_p_1*t_p_2 * np.sin(angle_oil))
     
     # Vectorized over rs
     return quad_vec(integrand, 0, capture_angle_medium, epsrel=epsrel)[0]
@@ -285,10 +288,55 @@ def Integral_2(rs, **kwargs):
         t_p_2 = t_p(n_glass, angle_glass, n_oil, angle_oil)
         t_s_1 = t_s(n_medium, angle_medium, n_glass, angle_glass)
         t_s_2 = t_s(n_glass, angle_glass, n_oil, angle_oil)
-        E_s, E_p = calculate_scatter_field_angular(angle_medium, **kwargs)
+        a_s, a_p, b_p = calculate_scatter_field_angular(angle_medium, **kwargs)
 
         return (B(2, angle_oil, rs, **kwargs)*
-            (E_s*t_s_1*t_s_2 - E_p*t_p_1*t_p_2))
+            (a_s*t_s_1*t_s_2 - a_p*np.cos(angle_oil)*t_p_1*t_p_2))
+    
+
+    # Vectorized over rs
+    return quad_vec(integrand, 0, capture_angle_medium, epsrel=epsrel)[0]
+
+
+def Integral_0_(rs, **kwargs):
+    n_medium = kwargs['n_medium']
+    n_glass = kwargs['n_glass']
+    n_oil = kwargs['n_oil']
+    NA = kwargs['NA']
+
+    capture_angle_medium = np.arcsin(min(NA/n_medium, 1))
+
+    def integrand(angle_medium):
+        angle_glass = snells_law(n_medium, angle_medium, n_glass)
+        angle_oil = snells_law(n_glass, angle_glass, n_oil)
+        t_p_1 = t_p(n_medium, angle_medium, n_glass, angle_glass)
+        t_p_2 = t_p(n_glass, angle_glass, n_oil, angle_oil)
+        a_s, a_p, b_p = calculate_scatter_field_angular(angle_medium, **kwargs)
+
+        return (B(0, angle_oil, rs, **kwargs)*
+            t_p_1*t_p_2*b_p*np.sin(angle_oil))
+    
+
+    # Vectorized over rs
+    return quad_vec(integrand, 0, capture_angle_medium, epsrel=epsrel)[0]
+
+def Integral_1_(rs, **kwargs):
+    n_medium = kwargs['n_medium']
+    n_glass = kwargs['n_glass']
+    n_oil = kwargs['n_oil']
+    NA = kwargs['NA']
+
+    capture_angle_medium = np.arcsin(min(NA/n_medium, 1))
+
+    def integrand(angle_medium):
+        angle_glass = snells_law(n_medium, angle_medium, n_glass)
+        angle_oil = snells_law(n_glass, angle_glass, n_oil)
+        t_p_1 = t_p(n_medium, angle_medium, n_glass, angle_glass)
+        t_p_2 = t_p(n_glass, angle_glass, n_oil, angle_oil)
+        a_s, a_p, b_p = calculate_scatter_field_angular(angle_medium, **kwargs)
+
+        return (B(1, angle_oil, rs, **kwargs)*
+            t_p_1*t_p_2*b_p*np.cos(angle_oil))
     
 
     # Vectorized over rs
@@ -314,20 +362,27 @@ def calculate_propagation(**kwargs):
     I_0 = interp1d(rs, Integral_0(rs, **kwargs))(camera.r)
     I_1 = interp1d(rs, Integral_1(rs, **kwargs))(camera.r)
     I_2 = interp1d(rs, Integral_2(rs, **kwargs))(camera.r)
+    I_0_ = interp1d(rs, Integral_0_(rs, **kwargs))(camera.r)
+    I_1_ = interp1d(rs, Integral_1_(rs, **kwargs))(camera.r)
     
     # Components for x polarization
-    e_px = I_0 + I_2*np.cos(2*camera.phi)
-    e_py = I_2*np.sin(2*camera.phi)
-    e_pz = -2j*I_1*np.cos(camera.phi)
+    e_xx = I_0 + I_2*np.cos(2*camera.phi)
+    e_xy = I_2*np.sin(2*camera.phi)
+    e_xz = -2j*I_1*np.cos(camera.phi)
     # Components for y polarization
-    e_sx = I_2*np.sin(2*camera.phi)
-    e_sy = I_0 - I_2*np.cos(2*camera.phi)
-    e_sz = -2j*I_1*np.sin(camera.phi)
+    e_yx = I_2*np.sin(2*camera.phi)
+    e_yy = I_0 - I_2*np.cos(2*camera.phi)
+    e_yz = -2j*I_1*np.sin(camera.phi)
+
+    e_zx = 2j*I_1_*np.sin(camera.phi)
+    e_zy = 2j*I_1_*np.sin(camera.phi)
+    e_zz = -2j*I_0_
 
     k = 2*np.pi*n_medium/wavelen
-    factor = -1j*k/2
-    return factor*np.stack([[e_px, e_py, e_pz],
-                                        [e_sx, e_sy, e_sz]]).transpose((2, 3, 0, 1))
+    factor = k/2
+    return factor*np.stack([[e_xx, e_xy, e_xz],
+                            [e_yx, e_yy, e_yz],
+                            [e_zx, e_zy, e_zz]]).transpose((2, 3, 0, 1))
 
 
 def calculate_fields(**kwargs) -> tuple[NDArray[np.complex128], NDArray[np.complex128]]:
@@ -363,8 +418,7 @@ def calculate_fields(**kwargs) -> tuple[NDArray[np.complex128], NDArray[np.compl
     
 
     
-    # the first is the x-component, the second y.
-    scatter_field = calculate_scatter_field(**kwargs)*-1j
+    scatter_field = calculate_scatter_field(**kwargs)
 
     if polarized:
         detector_field = detector_field_components@scatter_field
@@ -374,7 +428,8 @@ def calculate_fields(**kwargs) -> tuple[NDArray[np.complex128], NDArray[np.compl
     # Apply collection efficiency modification
     detector_field *= efficiency*(1-r_gm)
 
-    ref_polarization = np.array([np.cos(polarization_angle), np.sin(polarization_angle)]).T*np.ones_like(detector_field)
+    # reference polarization gets a - from the gouy phase flip
+    ref_polarization = -np.array([np.cos(polarization_angle), np.sin(polarization_angle), np.zeros_like(polarization_angle)]).T*np.ones_like(detector_field)
     reference_field = ref_polarization*E_reference
     
     # effect of inclination on opd
@@ -411,9 +466,9 @@ def calculate_intensities(**kwargs) -> NDArray[np.floating]:
 
 def calculate_scatter_field_angular(angle, multipolar=True, **kwargs):
     if multipolar:
-        return calculate_scatter_field_mie(angle, **kwargs)/calculate_scatter_field_mie(0, **kwargs)
+        return np.append(calculate_scatter_field_mie(angle, **kwargs)/calculate_scatter_field_mie(0, **kwargs), 0)
     else:
-        return np.array([1, np.cos(angle)])
+        return np.array([1, np.cos(angle), np.sin(angle)])
 
 def scatter_RI(**kwargs):
     scat_mat = kwargs['scat_mat']
