@@ -225,7 +225,7 @@ def B(n, angle_oil, rs, **kwargs):
     n_oil = kwargs['n_oil']
 
     k_0 = 2*np.pi/wavelen
-    return np.sqrt(np.cos(angle_oil))*np.sin(angle_oil)*jv(n, k_0*rs*n_oil*np.sin(angle_oil))*np.exp(1j*k_0*opd(angle_oil, **kwargs))
+    return np.sin(angle_oil)*jv(n, k_0*rs*n_oil*np.sin(angle_oil))*np.exp(1j*k_0*opd(angle_oil, **kwargs))
 
 
 epsrel=1e-3
