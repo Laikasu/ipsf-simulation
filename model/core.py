@@ -66,6 +66,7 @@ defaults = {
     "dipole": False,
     "polarization_angle": 0,
     "aspect_ratio": 1,
+    "center": False
 }
 
 # units
@@ -353,6 +354,33 @@ def calculate_propagation(**kwargs):
     """
     wavelen = kwargs['wavelen']
     n_medium = kwargs['n_medium']
+    center = kwargs['center']
+
+    if center:
+        I_0 = Integral_0(0, **kwargs)
+        I_1 = Integral_1(0, **kwargs)
+        I_2 = Integral_2(0, **kwargs)
+        I_0_ = Integral_0_(0, **kwargs)
+        I_1_ = Integral_1_(0, **kwargs)
+        
+        # Components for x polarization
+        e_xx = I_0 + I_2
+        e_xy = 0
+        e_xz = 0
+        # Components for y polarization
+        e_yx = 0
+        e_yy = I_0 - I_2
+        e_yz = 0
+
+        e_zx = -2j*I_1
+        e_zy = 0
+        e_zz = -2*I_0_
+
+        k = 2*np.pi*n_medium/wavelen
+        factor = k/2
+        return factor*np.stack([[e_xx, e_xy, e_xz],
+                                [e_yx, e_yy, e_yz],
+                                [e_zx, e_zy, e_zz]])
 
     camera = Camera(**kwargs)
     # 2 for every pixel
@@ -672,8 +700,8 @@ def simulate_center(**kwargs) -> NDArray[np.float64]:
     """Simulate only the center pixel"""
     params = create_params(**kwargs)
     # Single pixel
-    roi_size = params['pxsize']/params['magnification']
-    params['roi_size'] = roi_size
+    params['center'] = True
+    params['polarized'] = True
 
     return np.squeeze(vectorize_array(calculate_intensities, **params))
 
