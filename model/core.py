@@ -368,14 +368,14 @@ def calculate_propagation(**kwargs):
     # Components for x polarization
     e_xx = I_0 + I_2*np.cos(2*camera.phi)
     e_xy = I_2*np.sin(2*camera.phi)
-    e_xz = -2j*I_1*np.cos(camera.phi)
+    e_xz = 2j*I_1_*np.sin(camera.phi)
     # Components for y polarization
     e_yx = I_2*np.sin(2*camera.phi)
     e_yy = I_0 - I_2*np.cos(2*camera.phi)
-    e_yz = -2j*I_1*np.sin(camera.phi)
+    e_yz = 2j*I_1_*np.sin(camera.phi)
 
-    e_zx = 2j*I_1_*np.sin(camera.phi)
-    e_zy = 2j*I_1_*np.sin(camera.phi)
+    e_zx = -2j*I_1*np.cos(camera.phi)
+    e_zy = -2j*I_1*np.sin(camera.phi)
     e_zz = -2*I_0_
 
     k = 2*np.pi*n_medium/wavelen
@@ -450,7 +450,6 @@ def calculate_intensities(**kwargs) -> NDArray[np.floating]:
     polarized = kwargs['polarized']
 
     detector_field, reference_field = calculate_fields(**kwargs)
-    
     interference_contrast = 2*np.sum(np.real((detector_field*np.conj(reference_field))), axis=-1)
     scatter_contrast = np.sum(np.abs(detector_field)**2, axis=-1)
 
