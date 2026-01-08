@@ -62,6 +62,11 @@ class ParameterWindow(QDockWidget):
         self.defocus.setValue(model.defaults['defocus'])
         self.defocus.valueChanged.connect(partial(self.changed_value, 'defocus'))
 
+        self.scatter_phase = QCheckBox()
+        self.scatter_phase.setChecked(model.defaults['scatter_phase'])
+        self.scatter_phase.stateChanged.connect(partial(self.changed_value, 'scatter_phase'))
+        self.scatter_phase.setToolTip('Set wether Scatter phase is taken into account or not')
+
         # position
         self.x0 = QDoubleSpinBox(**self.params_info['xy_position'])
         self.x0.setValue(model.defaults['x0'])
@@ -273,6 +278,7 @@ class ParameterWindow(QDockWidget):
         particle_layout = ToolTipForm()
         particle_layout.addRow('Wavelength', self.wavelen)
         particle_layout.addRow('Defocus', self.defocus)
+        particle_layout.addRow('Scatter Phase', self.scatter_phase)
 
         particle_layout.addRow('X Position', self.x0)
         particle_layout.addRow('Y Position', self.y0)

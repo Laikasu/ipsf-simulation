@@ -66,7 +66,8 @@ defaults = {
     "dipole": False,
     "polarization_angle": 0,
     "aspect_ratio": 1,
-    "center": False
+    "center": False,
+    "scatter_phase": True
 }
 
 # units
