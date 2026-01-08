@@ -160,15 +160,6 @@ class ParameterWindow(QDockWidget):
         self.aberrations.stateChanged.connect(self.update_controls)
         self.aberrations.setToolTip('Set wether aberrations are calculated based on mismatch in design system parameters and real parameters')
 
-        self.multipolar_toggle = QCheckBox()
-        self.multipolar_toggle.setChecked(model.defaults['multipolar'])
-        self.multipolar_toggle.stateChanged.connect(partial(self.changed_value, 'multipolar'))
-        self.multipolar_toggle.setToolTip('Set wether Mie theory multipolar contributions are taken into account for nanoparticle scattering')
-
-
-
-        # Layers
-
         self.n_oil = QDoubleSpinBox(**self.params_info['RI'])
         self.n_oil.setValue(model.n_oil)
         self.n_oil.valueChanged.connect(partial(self.changed_value, 'n_oil'))
@@ -197,44 +188,8 @@ class ParameterWindow(QDockWidget):
         self.t_glass0.setValue(model.defaults['t_glass'])
         self.t_glass0.valueChanged.connect(partial(self.changed_value, 't_glass0'))
 
-        self.x0 = QDoubleSpinBox(**self.params_info['xy_position'])
-        self.x0.setValue(model.defaults['x0'])
-        self.x0.valueChanged.connect(partial(self.changed_value, 'x0'))
-
-        self.y0 = QDoubleSpinBox(**self.params_info['xy_position'])
-        self.y0.setValue(model.defaults['y0'])
-        self.y0.valueChanged.connect(partial(self.changed_value, 'y0'))
-
-        self.z_p = QDoubleSpinBox(**self.params_info['z_p'])
-        self.z_p.setValue(model.defaults['z_p'])
-        self.z_p.valueChanged.connect(partial(self.changed_value, 'z_p'))
-
-        self.defocus = QDoubleSpinBox(**self.params_info['defocus'])
-        self.defocus.setValue(model.defaults['defocus'])
-        self.defocus.valueChanged.connect(partial(self.changed_value, 'defocus'))
-        
-        self.n_scat = QComboBox()
-        self.n_scat.addItems(('gold', 'polystyrene', 'custom'))
-        self.n_scat.setCurrentText(model.defaults['scat_mat'])
-        self.n_scat.currentTextChanged.connect(partial(self.changed_value, 'scat_mat'))
-        self.setToolTip('Nanoparticle material')
-
-        self.n_custom = QDoubleSpinBox(**self.params_info['RI'])
-        self.n_custom.setValue(model.defaults['n_custom'])
-        self.n_custom.valueChanged.connect(partial(self.changed_value, 'n_custom'))
-
-        self.n_medium = QDoubleSpinBox(**self.params_info['RI'])
-        self.n_medium.setValue(model.defaults['n_medium'])
-        self.n_medium.valueChanged.connect(partial(self.changed_value, 'n_medium'))
-
-        self.diameter = QDoubleSpinBox(**self.params_info['diameter'])
-        self.diameter.setValue(model.defaults['diameter'])
-        self.diameter.valueChanged.connect(partial(self.changed_value, 'diameter'))
 
         # Animation
-        
-        
-
         self.start = QDoubleSpinBox(minimum=-10, maximum=1000)
         self.start.setValue(500)
 
