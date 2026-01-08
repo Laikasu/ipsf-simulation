@@ -100,11 +100,6 @@ class ParameterWindow(QDockWidget):
         self.multipolar_toggle.setChecked(model.defaults['multipolar'])
         self.multipolar_toggle.stateChanged.connect(partial(self.changed_value, 'multipolar'))
         self.multipolar_toggle.setToolTip('Set wether Mie theory multipolar contributions are taken into account for nanoparticle scattering')
-
-        self.scatter_phase = QCheckBox()
-        self.scatter_phase.setChecked(model.defaults['scatter_phase'])
-        self.scatter_phase.stateChanged.connect(partial(self.changed_value, 'scatter_phase'))
-        self.scatter_phase.setToolTip('Set wether Scatter phase is taken into account or not')
         
         self.aspect_ratio = QDoubleSpinBox(**self.params_info['aspect_ratio'])
         self.aspect_ratio.setValue(model.defaults['aspect_ratio'])
