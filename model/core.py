@@ -513,6 +513,7 @@ def scatter_RI(**kwargs):
         return kwargs['n_custom']
 
 def calculate_scatter_field_dipole(**kwargs):
+    scatter_phase = kwargs['scatter_phase']
     n_medium = kwargs['n_medium']
     diameter = kwargs['diameter']
     wavelen = kwargs['wavelen']
@@ -528,6 +529,8 @@ def calculate_scatter_field_dipole(**kwargs):
     e_scat = n_scat**2
     e_medium = n_medium**2
     polarizability = 4*np.pi*a**3*(e_scat-e_medium)/(e_scat + 2*e_medium)
+    if not scatter_phase:
+        polarizability = np.abs(polarizability).astype(np.complex128)
 
 
     rel_angle = polarization_angle-azimuth
@@ -540,6 +543,7 @@ def calculate_scatter_field_dipole(**kwargs):
 
 
 def calculate_scatter_field_anisotropic(**kwargs):
+    scatter_phase = kwargs['scatter_phase']
     n_medium = kwargs['n_medium']
     diameter = kwargs['diameter']
     wavelen = kwargs['wavelen']
@@ -573,6 +577,10 @@ def calculate_scatter_field_anisotropic(**kwargs):
     
     a_parallel = polarizability(L_parallel)
     a_perp = polarizability(L_perp)
+
+    if not scatter_phase:
+        a_parallel = np.abs(a_parallel).astype(np.complex128)
+        a_perp = np.abs(a_perp).astype(np.complex128)
     # both zero -> x a_parallel
     # polarization 45 -> x 1/sqrt(2)
 
@@ -602,7 +610,7 @@ def calculate_scatter_field_mie(angle, **kwargs):
     """
     Supports array inputs
     """
-    polarization_angle = kwargs['polarization_angle']
+    scatter_phase = kwargs['scatter_phase']
     n_medium = kwargs['n_medium']
     diameter = kwargs['diameter']
     wavelen = kwargs['wavelen']
@@ -654,6 +662,9 @@ def calculate_scatter_field_mie(angle, **kwargs):
 
     mu = -np.cos(angle)
     S1, S2 = mie.S1_S2(m, x_mie, mu, norm='wiscombe')
+    if not scatter_phase:
+        S1 = np.abs(S1).astype(np.complex128)*1j
+        S2 = -np.abs(S2).astype(np.complex128)*1j
     S = np.squeeze([S1, S2])
     return -S/1j/k
 
