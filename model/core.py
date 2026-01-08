@@ -116,8 +116,8 @@ class Camera():
         self.pxsize_obj = self.pxsize/self.magnification
         pixels = int(self.roi_size//self.pxsize_obj)
         self.pixels = pixels + 1 if pixels%2 == 0 else pixels
-        xs = np.linspace(-self.roi_size/2, self.roi_size/2, pixels)
-        ys = np.linspace(-self.roi_size/2, self.roi_size/2, pixels)
+        xs = np.linspace(-self.roi_size/2, self.roi_size/2, self.pixels)
+        ys = np.linspace(-self.roi_size/2, self.roi_size/2, self.pixels)
         self.x, self.y = np.meshgrid(xs, ys)
         self.r = np.sqrt((self.x-x0)**2 + (self.y-y0)**2)
         self.phi = np.arctan2(self.y-y0, self.x-x0)
@@ -429,7 +429,6 @@ def calculate_fields(**kwargs) -> tuple[NDArray[np.complex128], NDArray[np.compl
     polarized = kwargs['polarized']
     n_medium = kwargs['n_medium']
     efficiency = kwargs['efficiency']
-    
 
     # Relative signal strength change due to layer boundaries
     r_gm = (n_glass - n_medium)/(n_glass + n_medium)

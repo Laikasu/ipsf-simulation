@@ -46,21 +46,96 @@ class ParameterWindow(QDockWidget):
 
     def __init__(self, name, parent=None):
         super().__init__(name, parent)
-        # should probably have associated units
+
         self.params = {}
         self.tabwidget = QTabWidget(self)
         self.setWidget(self.tabwidget)
         
+        # Parameters
 
-        self.efficiency = QDoubleSpinBox(**self.params_info['efficiency'])
-        self.efficiency.setValue(model.defaults['efficiency'])
-        self.efficiency.valueChanged.connect(partial(self.changed_value, 'efficiency'))
+        # Scattering
+        self.wavelen = QDoubleSpinBox(**self.params_info['wavelen'])
+        self.wavelen.setValue(model.defaults['wavelen'])
+        self.wavelen.valueChanged.connect(partial(self.changed_value, 'wavelen'))
 
+        self.defocus = QDoubleSpinBox(**self.params_info['defocus'])
+        self.defocus.setValue(model.defaults['defocus'])
+        self.defocus.valueChanged.connect(partial(self.changed_value, 'defocus'))
+
+        # position
+        self.x0 = QDoubleSpinBox(**self.params_info['xy_position'])
+        self.x0.setValue(model.defaults['x0'])
+        self.x0.valueChanged.connect(partial(self.changed_value, 'x0'))
+
+        self.y0 = QDoubleSpinBox(**self.params_info['xy_position'])
+        self.y0.setValue(model.defaults['y0'])
+        self.y0.valueChanged.connect(partial(self.changed_value, 'y0'))
+
+        self.z_p = QDoubleSpinBox(**self.params_info['z_p'])
+        self.z_p.setValue(model.defaults['z_p'])
+        self.z_p.valueChanged.connect(partial(self.changed_value, 'z_p'))
+
+        # RI
+        self.n_scat = QComboBox()
+        self.n_scat.addItems(('gold', 'polystyrene', 'custom'))
+        self.n_scat.setCurrentText(model.defaults['scat_mat'])
+        self.n_scat.currentTextChanged.connect(partial(self.changed_value, 'scat_mat'))
+        self.setToolTip('Nanoparticle material')
+
+        self.n_custom = QDoubleSpinBox(**self.params_info['RI'])
+        self.n_custom.setValue(model.defaults['n_custom'])
+        self.n_custom.valueChanged.connect(partial(self.changed_value, 'n_custom'))
+
+        self.n_medium = QDoubleSpinBox(**self.params_info['RI'])
+        self.n_medium.setValue(model.defaults['n_medium'])
+        self.n_medium.valueChanged.connect(partial(self.changed_value, 'n_medium'))
+
+        self.diameter = QDoubleSpinBox(**self.params_info['diameter'])
+        self.diameter.setValue(model.defaults['diameter'])
+        self.diameter.valueChanged.connect(partial(self.changed_value, 'diameter'))
+
+
+        # Model
+        self.multipolar_toggle = QCheckBox()
+        self.multipolar_toggle.setChecked(model.defaults['multipolar'])
+        self.multipolar_toggle.stateChanged.connect(partial(self.changed_value, 'multipolar'))
+        self.multipolar_toggle.setToolTip('Set wether Mie theory multipolar contributions are taken into account for nanoparticle scattering')
+
+        self.scatter_phase = QCheckBox()
+        self.scatter_phase.setChecked(model.defaults['scatter_phase'])
+        self.scatter_phase.stateChanged.connect(partial(self.changed_value, 'scatter_phase'))
+        self.scatter_phase.setToolTip('Set wether Scatter phase is taken into account or not')
+        
         self.aspect_ratio = QDoubleSpinBox(**self.params_info['aspect_ratio'])
         self.aspect_ratio.setValue(model.defaults['aspect_ratio'])
         self.aspect_ratio.valueChanged.connect(partial(self.changed_value, 'aspect_ratio'))
+
+        self.azimuth = QSpinBox(**self.params_info['azimuth'])
+        self.azimuth.setValue(model.defaults['azimuth'])
+        self.azimuth.valueChanged.connect(partial(self.changed_value, 'azimuth'))
+    
+        self.inclination = QSpinBox(**self.params_info['inclination'])
+        self.inclination.setValue(model.defaults['inclination'])
+        self.inclination.valueChanged.connect(partial(self.changed_value, 'inclination'))
+
+        self.dipole = QCheckBox()
+        self.dipole.setChecked(model.defaults['dipole'])
+        self.dipole.stateChanged.connect(partial(self.changed_value, 'dipole'))
+        self.dipole.stateChanged.connect(self.update_controls)
+        self.dipole.setToolTip('Simulate dipole scattering: a theoretical infinitely small needle object with length: aspect ratio x diameter')
+
+        self.polarized = QCheckBox()
+        self.polarized.setChecked(model.defaults['polarized'])
+        self.polarized.stateChanged.connect(partial(self.changed_value, 'polarized'))
+        self.polarized.stateChanged.connect(self.update_controls)
+        self.polarized.setToolTip('Set wether the incoming light is polarized or not; in the unpolarized case the signal will be averaged over all polarizations')
+
+        self.polarization_angle = QSpinBox(**self.params_info['polarization'])
+        self.polarization_angle.setValue(model.defaults['polarization_angle'])
+        self.polarization_angle.valueChanged.connect(partial(self.changed_value, 'polarization_angle'))
         
-        # All parameters
+
+        # Setup
         self.magnification = QSpinBox(**self.params_info['magnification'])
         self.magnification.setValue(model.defaults['magnification'])
         self.magnification.valueChanged.connect(partial(self.changed_value, 'magnification'))
@@ -73,38 +148,12 @@ class ParameterWindow(QDockWidget):
         self.pxsize.setValue(model.defaults['pxsize'])
         self.pxsize.valueChanged.connect(partial(self.changed_value, 'pxsize'))
 
-        self.wavelen = QDoubleSpinBox(**self.params_info['wavelen'])
-        self.wavelen.setValue(model.defaults['wavelen'])
-        self.wavelen.valueChanged.connect(partial(self.changed_value, 'wavelen'))
+        self.efficiency = QDoubleSpinBox(**self.params_info['efficiency'])
+        self.efficiency.setValue(model.defaults['efficiency'])
+        self.efficiency.valueChanged.connect(partial(self.changed_value, 'efficiency'))
+        
 
-        # Angles
-        self.azimuth = QSpinBox(**self.params_info['azimuth'])
-        self.azimuth.setValue(model.defaults['azimuth'])
-        self.azimuth.valueChanged.connect(partial(self.changed_value, 'azimuth'))
-    
-        self.inclination = QSpinBox(**self.params_info['inclination'])
-        self.inclination.setValue(model.defaults['inclination'])
-        self.inclination.valueChanged.connect(partial(self.changed_value, 'inclination'))
-
-        self.polarization_angle = QSpinBox(**self.params_info['polarization'])
-        self.polarization_angle.setValue(model.defaults['polarization_angle'])
-        self.polarization_angle.valueChanged.connect(partial(self.changed_value, 'polarization_angle'))
-
-        # Model
-
-        self.polarized = QCheckBox()
-        self.polarized.setChecked(model.defaults['polarized'])
-        self.polarized.stateChanged.connect(partial(self.changed_value, 'polarized'))
-        self.polarized.stateChanged.connect(self.update_controls)
-        self.polarized.setToolTip('Set wether the incoming light is polarized or not; in the unpolarized case the signal will be averaged over all polarizations')
-
-        self.dipole = QCheckBox()
-        self.dipole.setChecked(model.defaults['dipole'])
-        self.dipole.stateChanged.connect(partial(self.changed_value, 'dipole'))
-        self.dipole.stateChanged.connect(self.update_controls)
-        self.dipole.setToolTip('Simulate dipole scattering: a theoretical infinitely small needle object with length: aspect ratio x diameter')
-
-
+        # Layer aberrations
         self.aberrations = QCheckBox()
         self.aberrations.setChecked(model.defaults['aberrations'])
         self.aberrations.stateChanged.connect(partial(self.changed_value, 'aberrations'))
