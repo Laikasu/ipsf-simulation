@@ -18,7 +18,7 @@ from importlib import resources
 
 
 # Gold
-from .n_gold import n_gold
+from .n_gold import n_gold, n_gold_drude
 
 
 
@@ -31,6 +31,7 @@ n_water = 1.333
 n_glass = 1.499
 n_oil = 1.518
 n_glyc = 1.461
+n_eg = 1.433
 
 # default design parameters
 defaults = {
@@ -67,13 +68,13 @@ defaults = {
     "polarization_angle": 0,
     "aspect_ratio": 1,
     "center": False,
-    "scatter_phase": True
+    "scatter_phase": None
 }
 
 # units
 microns = {'z_p', 'defocus', 't_oil0', 't_glass0', 't_oil', 't_glass', 'roi_size', 'pxsize', 'x0', 'y0'}
 nanometers = {'wavelen', 'diameter'}
-degrees = {'azimuth', 'inclination', 'polarization_angle'}
+degrees = {'azimuth', 'inclination', 'polarization_angle', 'scatter_phase'}
 
 
 def create_params(**kwargs) -> dict:
@@ -96,7 +97,8 @@ def create_params(**kwargs) -> dict:
     for nm in nanometers:
         params[nm] = params[nm]*10**-9
     for deg in degrees:
-        params[deg] = np.radians(params[deg])
+        if params[deg] is not None:
+            params[deg] = np.radians(params[deg])
 
     return params
 
@@ -433,7 +435,8 @@ def calculate_fields(**kwargs) -> tuple[NDArray[np.complex128], NDArray[np.compl
 
     # Relative signal strength change due to layer boundaries
     r_gm = (n_glass - n_medium)/(n_glass + n_medium)
-    E_reference = r_gm
+    t_go = 2*n_glass/(n_glass + n_oil)
+    E_reference = r_gm*t_go
 
     # takes 2x3 matrix M takes polarization p and Mp gives E in p and s components.
     detector_field_components = calculate_propagation(**kwargs)
@@ -443,20 +446,19 @@ def calculate_fields(**kwargs) -> tuple[NDArray[np.complex128], NDArray[np.compl
         polarization_angle = np.linspace(0, 2*np.pi, 100)
         kwargs['polarization_angle'] = polarization_angle
     
-    
 
-    
-    scatter_field = calculate_scatter_field(**kwargs)
+    t_gm = 2*n_glass/(n_glass + n_medium)
+    scatter_field = t_gm*calculate_scatter_field(**kwargs)
 
     if polarized:
         detector_field = detector_field_components@scatter_field
     else:
         detector_field = np.einsum('ijab,bk->ijka', detector_field_components, scatter_field)
     
-    # Apply collection efficiency modification
-    detector_field *= efficiency*(1-r_gm)
+    # Apply collection efficiency modification / efficiency/reflection
+    detector_field *= efficiency
 
-    # reference polarization gets a - from the gouy phase flip
+    
     ref_polarization = np.array([np.cos(polarization_angle), np.sin(polarization_angle), np.zeros_like(polarization_angle)]).T*np.ones_like(detector_field)
     reference_field = ref_polarization*E_reference
     
@@ -478,9 +480,16 @@ def calculate_intensities(**kwargs) -> NDArray[np.floating]:
     polarized = kwargs['polarized']
 
     detector_field, reference_field = calculate_fields(**kwargs)
-    interference_contrast = 2*np.sum(np.real((detector_field*np.conj(reference_field))), axis=-1)
-    scatter_contrast = np.sum(np.abs(detector_field)**2, axis=-1)
 
+    # if detector_field.ndim > 2:
+    #     print(reference_field[17,17])
+    # else:
+    #     print(reference_field)
+
+    reference_intensity = np.sum(np.abs(reference_field)**2, axis=-1)
+    interference_contrast = 2*np.sum(np.real((np.conj(detector_field)*reference_field)), axis=-1)/reference_intensity
+    scatter_contrast = np.sum(np.abs(detector_field)**2, axis=-1)/reference_intensity
+    
     
 
     # Average over all polarization angles if unpolarized
@@ -529,10 +538,14 @@ def calculate_scatter_field_dipole(**kwargs):
     e_scat = n_scat**2
     e_medium = n_medium**2
     polarizability = 4*np.pi*a**3*(e_scat-e_medium)/(e_scat + 2*e_medium)
-    if not scatter_phase:
-        polarizability = np.abs(polarizability).astype(np.complex128)
 
+    # Overwrite scatter phase
+    if scatter_phase is not None:
+        polarizability = np.abs(polarizability).astype(np.complex128)*np.exp(1j*scatter_phase)
 
+    
+    # self-interaction
+    # polarizability = polarizability/(1 + 1j* 2/3 *(k/n_medium)**3 * polarizability)
     rel_angle = polarization_angle-azimuth
     
     dir = np.cos(inclination)*np.array([np.cos(rel_angle)*np.cos(inclination)*np.cos(azimuth),
@@ -577,10 +590,13 @@ def calculate_scatter_field_anisotropic(**kwargs):
     
     a_parallel = polarizability(L_parallel)
     a_perp = polarizability(L_perp)
+    
+    # Overwrite scatter phase
+    if scatter_phase is not None:
+        a_parallel = np.abs(a_parallel).astype(np.complex128)*np.exp(1j*scatter_phase)
+        a_perp = np.abs(a_perp).astype(np.complex128)*np.exp(1j*scatter_phase)
 
-    if not scatter_phase:
-        a_parallel = np.abs(a_parallel).astype(np.complex128)
-        a_perp = np.abs(a_perp).astype(np.complex128)
+        
     # both zero -> x a_parallel
     # polarization 45 -> x 1/sqrt(2)
 
@@ -659,25 +675,27 @@ def calculate_scatter_field_mie(angle, **kwargs):
     # qext, qsca, qback, g = np.vectorize(mie.efficiencies_mx)(m, x_mie)
     # print(qext, qsca, qback)
     # exit()
-
     mu = -np.cos(angle)
     S1, S2 = mie.S1_S2(m, x_mie, mu, norm='wiscombe')
-    if not scatter_phase:
-        S1 = np.abs(S1).astype(np.complex128)*1j
-        S2 = -np.abs(S2).astype(np.complex128)*1j
+
+    # Overwrite scatter phase
+    if scatter_phase is not None:
+        S1 = np.abs(S1).astype(np.complex128)*1j*np.exp(1j*scatter_phase)
+        S2 = -np.abs(S2).astype(np.complex128)*1j*np.exp(1j*scatter_phase)
     S = np.squeeze([S1, S2])
     return -S/1j/k
 
 def calculate_scatter_field(multipolar=True, dipole=False, **kwargs):
     polarization_angle = kwargs['polarization_angle']
-    if multipolar:
-        return calculate_scatter_field_mie(0, **kwargs)[0]*np.array([np.cos(polarization_angle), np.sin(polarization_angle), np.zeros_like(polarization_angle)])
-    
     if dipole:
-        return calculate_scatter_field_dipole(**kwargs)
+        sf = calculate_scatter_field_dipole(**kwargs)
+    elif multipolar:
+        sf = calculate_scatter_field_mie(0, **kwargs)[0]*np.array([np.cos(polarization_angle), np.sin(polarization_angle), np.zeros_like(polarization_angle)])
+    else:
+        sf = calculate_scatter_field_anisotropic(**kwargs)
     
-    return calculate_scatter_field_anisotropic(**kwargs)
-
+    # Scatter phase direction correction
+    return np.conj(sf)
 
 
 

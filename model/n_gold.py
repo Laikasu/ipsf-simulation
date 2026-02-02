@@ -26,3 +26,30 @@ imag = np.array([1.188, 1.203, 1.226, 1.251, 1.277, 1.304, 1.35, 1.387, 1.427,
 
 _n_gold = real - 1j*imag
 n_gold = interp1d(wavelen*10**-6, _n_gold, kind='cubic')
+
+
+from scipy import constants as const
+def drude_gold(wavelen, eps_inf=1.0):
+    """
+    Get the refractive index of gold according only to the Drude model.
+    """
+    # Johnson and Christy
+    f = 1
+    tau = 9*10**-15
+    damping = const.hbar/tau/const.e
+    res_p = 9.06
+    
+
+    freq_eV = const.h * const.c / (wavelen) / const.e
+
+    drude = -f * res_p**2 / (freq_eV**2 + 1j*freq_eV*damping)
+    epsilon = eps_inf + drude
+    return np.sqrt(epsilon)
+
+
+real2 = np.real(drude_gold(wavelen*10**-6, 9.84))
+
+# Imaginary should not be damped
+imag2 = np.imag(drude_gold(wavelen*10**-6, 9.84))
+_n_gold_drude = real2 - 1j*imag2
+n_gold_drude = interp1d(wavelen*10**-6, _n_gold_drude, kind='cubic')

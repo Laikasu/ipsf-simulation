@@ -42,6 +42,7 @@ class ParameterWindow(QDockWidget):
             'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm', 'toolTip': 'Nanoparticle diameter; with rods/spheroids this is the minor axis diameter'},
             'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1, 'toolTip': 'test', 'toolTip': 'Adjustment to the collection efficiency to take effects into account that are not in the model; eg stronger coupling due to proximity to glass substrate'},
             'aspect_ratio': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 2, 'toolTip': 'Ratio between the major axis of the nanorod/spheroid and the minor axes: b/a. For rods this is higher than 0. NB rods are not spheroids so this is an approximation'},
+            'scatter_phase': {'minimum': -360, 'maximum': 0, 'singleStep': 5, 'suffix': '°', 'toolTip': 'Scatter delay phase'}
         }
 
     def __init__(self, name, parent=None):
@@ -62,10 +63,13 @@ class ParameterWindow(QDockWidget):
         self.defocus.setValue(model.defaults['defocus'])
         self.defocus.valueChanged.connect(partial(self.changed_value, 'defocus'))
 
-        self.scatter_phase = QCheckBox()
-        self.scatter_phase.setChecked(model.defaults['scatter_phase'])
-        self.scatter_phase.stateChanged.connect(partial(self.changed_value, 'scatter_phase'))
-        self.scatter_phase.setToolTip('Set wether Scatter phase is taken into account or not')
+        self.scatter_phase_toggle = QCheckBox()
+        self.scatter_phase_toggle.stateChanged.connect(self.changed_scatter_phase)
+        self.scatter_phase_toggle.setToolTip('Set custom scatter phase')
+
+        self.scatter_phase = QDoubleSpinBox(**self.params_info['scatter_phase'])
+        self.scatter_phase.valueChanged.connect(self.changed_scatter_phase)
+        self.scatter_phase.setToolTip('Set custom scatter phase')
 
         # position
         self.x0 = QDoubleSpinBox(**self.params_info['xy_position'])
@@ -278,6 +282,7 @@ class ParameterWindow(QDockWidget):
         particle_layout = ToolTipForm()
         particle_layout.addRow('Wavelength', self.wavelen)
         particle_layout.addRow('Defocus', self.defocus)
+        particle_layout.addRow('Custom Scatter Phase', self.scatter_phase_toggle)
         particle_layout.addRow('Scatter Phase', self.scatter_phase)
 
         particle_layout.addRow('X Position', self.x0)
@@ -335,6 +340,14 @@ class ParameterWindow(QDockWidget):
             self.sweep()
         else:
             self.update_psf.emit(self.params)
+    
+    def changed_scatter_phase(self):
+        self.params['scatter_phase'] = self.scatter_phase.value() if self.scatter_phase_toggle.isChecked() else None
+        self.update_controls()
+        if self.live_mode.isChecked():
+            self.sweep()
+        else:
+            self.update_psf.emit(self.params)
 
     def update_controls(self):
         a = not self.multipolar_toggle.isChecked()
@@ -342,6 +355,7 @@ class ParameterWindow(QDockWidget):
         self.inclination.setEnabled(a)
         self.aspect_ratio.setEnabled(a)
         self.dipole.setEnabled(a)
+        self.scatter_phase.setEnabled(self.scatter_phase_toggle.isChecked())
 
         self.polarization_angle.setEnabled(self.polarized.isChecked())
         self.n_custom.setEnabled(self.n_scat.currentText() == 'custom')
