@@ -58,7 +58,7 @@ defaults = {
     "n_custom": n_ps,
     "x0": 0,               # micron
     "y0": 0,               # micron
-    "efficiency": 1.,   # Modification to the E_scat/E_ref ratio
+    "efficiency": 0.45,   # Modification to the E_scat/E_ref ratio
     # Angles / Polarization
     "anisotropic": False,
     "azimuth": 0,

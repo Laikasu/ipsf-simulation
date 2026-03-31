@@ -7,6 +7,11 @@
 - Simulate PSF and iPSF with configurable parameters
 - Efficient computational methods for high-speed simulations
 
+## Usage
+- The Main Window displays the generated image. Adjust experimental parameters in the Parameters panel.
+- Use the Sweep tab in the Parameters panel to create animations. To visualize the sweep, open the Plot window via View → Show Plot.
+- You can export images, animations and plots with File → Save.
+
 ## Installation
 - For Windows an installer is provided under releases
 - For any os the app can be run through python.

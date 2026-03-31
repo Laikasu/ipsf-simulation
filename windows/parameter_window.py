@@ -40,7 +40,7 @@ class ParameterWindow(QDockWidget):
             'defocus': {'minimum': -5, 'maximum': 5, 'singleStep': 0.01, 'decimals': 2, 'suffix': ' um', 'toolTip': 'Distance between the actual focal plane and the particle’s focal plane in object space: negative when below, positive when above.'},
             'xy_position': {'minimum': -2, 'maximum': 2, 'singleStep': 0.1, 'decimals': 2, 'suffix': ' um', 'toolTip': 'Particle position'},
             'diameter' : {'minimum': 0.1, 'maximum': 1000, 'singleStep': 10, 'decimals': 1, 'suffix': ' nm', 'toolTip': 'Nanoparticle diameter; with rods/spheroids this is the minor axis diameter'},
-            'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 1, 'toolTip': 'test', 'toolTip': 'Adjustment to the collection efficiency to take effects into account that are not in the model; eg stronger coupling due to proximity to glass substrate'},
+            'efficiency': {'minimum': 0.1, 'maximum': 10, 'singleStep': 0.05, 'decimals': 2, 'toolTip': 'test', 'toolTip': 'Adjustment to the collection efficiency and reflection to take effects into account that are not in the model; eg stronger coupling due to proximity to glass substrate'},
             'aspect_ratio': {'minimum': 1, 'maximum': 10, 'singleStep': 0.1, 'decimals': 2, 'toolTip': 'Ratio between the major axis of the nanorod/spheroid and the minor axes: b/a. For rods this is higher than 0. NB rods are not spheroids so this is an approximation'},
             'scatter_phase': {'minimum': -360, 'maximum': 0, 'singleStep': 5, 'suffix': '°', 'toolTip': 'Scatter delay phase'}
         }
@@ -89,7 +89,7 @@ class ParameterWindow(QDockWidget):
         self.n_scat.addItems(('gold', 'polystyrene', 'custom'))
         self.n_scat.setCurrentText(model.defaults['scat_mat'])
         self.n_scat.currentTextChanged.connect(partial(self.changed_value, 'scat_mat'))
-        self.setToolTip('Nanoparticle material')
+        self.n_scat.setToolTip('Nanoparticle material')
 
         self.n_custom = QDoubleSpinBox(**self.params_info['RI'])
         self.n_custom.setValue(model.defaults['n_custom'])
@@ -126,7 +126,7 @@ class ParameterWindow(QDockWidget):
         self.dipole.setChecked(model.defaults['dipole'])
         self.dipole.stateChanged.connect(partial(self.changed_value, 'dipole'))
         self.dipole.stateChanged.connect(self.update_controls)
-        self.dipole.setToolTip('Simulate dipole scattering: a theoretical infinitely small needle object with length: aspect ratio x diameter')
+        self.dipole.setToolTip('Simulate dipole scattering: a theoretical object only polarizable in one direction with length: aspect ratio x diameter')
 
         self.polarized = QCheckBox()
         self.polarized.setChecked(model.defaults['polarized'])
@@ -212,6 +212,7 @@ class ParameterWindow(QDockWidget):
         self.fps.valueChanged.connect(self.fps_changed.emit)
 
         self.live_mode = QCheckBox('Live Mode')
+        self.live_mode.setChecked(True)
         self.live_mode.setToolTip('Set wether parameter updates will recalculate the animation; if not the animation will be cancelled and a regular image is generated')
 
         self.start_sweep = QPushButton('Start sweep')
@@ -227,6 +228,7 @@ class ParameterWindow(QDockWidget):
         setup_layout.addRow('Magnification', self.magnification)
         setup_layout.addRow('ROI Size', self.roi_size)
         setup_layout.addRow('Pixel Size', self.pxsize)
+        setup_layout.addRow('Efficiency', self.efficiency)
         self.setup_group.setLayout(setup_layout)
 
         # Orientation group
@@ -243,17 +245,11 @@ class ParameterWindow(QDockWidget):
         orientation_layout.addRow('Polarization', self.polarization_angle)
         self.orientation_group.setLayout(orientation_layout)
 
-        # Model group
-        self.model_group = QGroupBox('Model')
-        model_layout = ToolTipForm()
-        model_layout.addRow('Efficiency', self.efficiency)
-        self.model_group.setLayout(model_layout)
-
         # Aberrations group
-        self.abertations_group = QGroupBox('Abberations')
+        self.abertations_group = QGroupBox('Aberrations')
         abertations_group_layout = QVBoxLayout()
         check_layout = ToolTipForm()
-        check_layout.addRow('Abberations', self.aberrations)
+        check_layout.addRow('Aberrations', self.aberrations)
         abertations_layout = QGridLayout()
         abertations_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         abertations_layout.addWidget(QLabel('Parameter'),0,0)
@@ -300,7 +296,6 @@ class ParameterWindow(QDockWidget):
         scatterertab_layout = QVBoxLayout()
         scatterertab_layout.addWidget(self.particle_group)
         scatterertab_layout.addWidget(self.orientation_group)
-        scatterertab_layout.addWidget(self.model_group)
         scatterertab_layout.addStretch(1)
         self.scatterer_tab.setLayout(scatterertab_layout)
 
@@ -308,7 +303,6 @@ class ParameterWindow(QDockWidget):
         self.setup_tab = QWidget(self)
         setuptab_layout = QVBoxLayout()
         setuptab_layout.addWidget(self.setup_group)
-        setuptab_layout.addWidget(self.model_group)
         setuptab_layout.addWidget(self.abertations_group)
         setuptab_layout.addStretch(1)
         self.setup_tab.setLayout(setuptab_layout)
