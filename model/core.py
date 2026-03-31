@@ -80,6 +80,11 @@ degrees = {'azimuth', 'inclination', 'polarization_angle', 'scatter_phase'}
 def create_params(**kwargs) -> dict:
     """Insert defaults and convert units"""
     # Default insertion
+
+    for key in kwargs.keys():
+        if key not in defaults.keys():
+            raise KeyError(f'{key} is not a valid input parameter')
+
     params = {**defaults, **kwargs}
     
     # Auto set multipolar: default on for aspect ratio 1
@@ -157,7 +162,7 @@ def opd(angle_oil, **kwargs):
         glass_opd = t_glass*n_eff(n_glass) - t_glass0*n_eff(n_glass0)
         
         # Practical focusing condition provides real t_oil (Gibson, 1991)
-        t_oil = z_p - defocus + n_oil*(-z_p/n_medium - t_glass/n_glass + t_glass0/n_glass0 + t_oil0/n_oil0)
+        t_oil = -defocus + n_oil*(-z_p/n_medium - t_glass/n_glass + t_glass0/n_glass0 + t_oil0/n_oil0)
         n_eff_oil = n_oil*np.cos(angle_oil) # simplified
 
         oil_opd = t_oil*n_eff_oil - t_oil0*n_eff(n_oil0)
@@ -170,7 +175,7 @@ def opd(angle_oil, **kwargs):
         excitation_opd = n_medium*z_p
         medium_opd = z_p*n_eff(n_medium)
 
-        Dt_oil = z_p*(1 - n_oil/n_medium) - defocus
+        Dt_oil = -z_p * n_oil/n_medium - defocus
         n_eff_oil = n_oil*np.cos(angle_oil) # simplified
         
         return n_eff_oil*Dt_oil + medium_opd + excitation_opd
@@ -197,7 +202,7 @@ def opd_ref(**kwargs):
         glass_opd = t_glass*n_glass - t_glass0*n_glass0
         
         # Practical focusing condition provides real t_oil (Gibson, 1991)
-        t_oil = z_p - defocus + n_oil*(-z_p/n_medium - t_glass/n_glass + t_glass0/n_glass0 + t_oil0/n_oil0)
+        t_oil = -defocus + n_oil*(-z_p/n_medium - t_glass/n_glass + t_glass0/n_glass0 + t_oil0/n_oil0)
 
         oil_opd = t_oil*n_oil - t_oil0*n_oil0
 
@@ -205,7 +210,7 @@ def opd_ref(**kwargs):
     else:
         # simplified for constant RI and thickness
 
-        Dt_oil = z_p*(1 - n_oil/n_medium) - defocus
+        Dt_oil = -z_p* n_oil/n_medium - defocus
         
         return n_oil*Dt_oil
 
